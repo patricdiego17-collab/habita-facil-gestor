@@ -2,6 +2,10 @@ import { useState } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { Header } from "@/components/Header";
 import { Dashboard } from "@/components/Dashboard";
+import { SocialRegistrationForm } from "@/components/forms/SocialRegistrationForm";
+import { FamilyCompositionForm } from "@/components/forms/FamilyCompositionForm";
+import { DocumentUploadForm } from "@/components/forms/DocumentUploadForm";
+import { TermsAgreementForm } from "@/components/forms/TermsAgreementForm";
 
 interface User {
   email: string;
@@ -12,9 +16,14 @@ interface User {
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [formData, setFormData] = useState({
+    socialRegistration: null,
+    familyComposition: null,
+    documents: null,
+    signature: null
+  });
 
   const handleLogin = (credentials: { email: string; password: string; role: string }) => {
-    // Simulate login - in real app, this would make an API call
     const userData: User = {
       email: credentials.email,
       role: credentials.role as 'admin' | 'social_worker' | 'citizen',
@@ -47,10 +56,36 @@ const Index = () => {
       case 'dashboard':
         return <Dashboard userRole={user.role} userName={user.name} onNavigate={handleNavigate} />;
       case 'new-registration':
-        return <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-6">Novo Cadastro Social</h1>
-          <p className="text-muted-foreground">Funcionalidade em desenvolvimento...</p>
-        </div>;
+        return <SocialRegistrationForm 
+          onNext={(data) => {
+            setFormData(prev => ({ ...prev, socialRegistration: data }));
+            setCurrentPage('family-composition');
+          }}
+        />;
+      case 'family-composition':
+        return <FamilyCompositionForm 
+          onNext={(data) => {
+            setFormData(prev => ({ ...prev, familyComposition: data }));
+            setCurrentPage('documents');
+          }}
+          onBack={() => setCurrentPage('new-registration')}
+        />;
+      case 'documents':
+        return <DocumentUploadForm 
+          onNext={(data) => {
+            setFormData(prev => ({ ...prev, documents: data }));
+            setCurrentPage('terms');
+          }}
+          onBack={() => setCurrentPage('family-composition')}
+        />;
+      case 'terms':
+        return <TermsAgreementForm 
+          onFinish={(signature) => {
+            setFormData(prev => ({ ...prev, signature }));
+            setCurrentPage('dashboard');
+          }}
+          onBack={() => setCurrentPage('documents')}
+        />;
       default:
         return <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6">Página em Desenvolvimento</h1>
