@@ -13,10 +13,20 @@ interface User {
   name: string;
 }
 
+interface FormDataState {
+  socialRegistration: {
+    cpf1: string;
+    [key: string]: any;
+  } | null;
+  familyComposition: any[] | null;
+  documents: any | null;
+  signature: any | null;
+}
+
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormDataState>({
     socialRegistration: null,
     familyComposition: null,
     documents: null,
@@ -66,6 +76,12 @@ const Index = () => {
       case 'family-composition':
         return <FamilyCompositionForm 
           onNext={(data) => {
+            // Verificar se há cadastro social vinculado
+            if (!formData.socialRegistration?.cpf1) {
+              alert('É necessário preencher o Cadastro Social primeiro.');
+              setCurrentPage('social-registration');
+              return;
+            }
             setFormData(prev => ({ ...prev, familyComposition: data }));
             setCurrentPage('dashboard');
           }}
@@ -75,8 +91,17 @@ const Index = () => {
         return <SocialRegistrationForm 
           onNext={(data) => {
             setFormData(prev => ({ ...prev, socialRegistration: data }));
-            setCurrentPage('family-composition');
+            setCurrentPage('family-composition-flow');
           }}
+          onBack={() => setCurrentPage('dashboard')}
+        />;
+      case 'family-composition-flow':
+        return <FamilyCompositionForm 
+          onNext={(data) => {
+            setFormData(prev => ({ ...prev, familyComposition: data }));
+            setCurrentPage('documents');
+          }}
+          onBack={() => setCurrentPage('new-registration')}
         />;
       case 'documents':
         return <DocumentUploadForm 
@@ -84,12 +109,27 @@ const Index = () => {
             setFormData(prev => ({ ...prev, documents: data }));
             setCurrentPage('terms');
           }}
-          onBack={() => setCurrentPage('family-composition')}
+          onBack={() => {
+            // Se veio do fluxo completo, volta para family-composition-flow
+            // Se veio individualmente, volta para dashboard
+            if (formData.familyComposition) {
+              setCurrentPage('family-composition-flow');
+            } else {
+              setCurrentPage('dashboard');
+            }
+          }}
         />;
       case 'terms':
         return <TermsAgreementForm 
           onFinish={(signature) => {
             setFormData(prev => ({ ...prev, signature }));
+            // Salvar cadastro completo
+            console.log('Cadastro completo:', { ...formData, signature });
+            if (formData.socialRegistration?.cpf1) {
+              alert(`Cadastro finalizado com sucesso para CPF: ${formData.socialRegistration.cpf1}`);
+            } else {
+              alert('Termo assinado com sucesso!');
+            }
             setCurrentPage('dashboard');
           }}
           onBack={() => setCurrentPage('documents')}

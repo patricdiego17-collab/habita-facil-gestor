@@ -100,7 +100,7 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
     ctm: "",
     selo: "",
     entrevistador: "",
-    data: new Date().toISOString().split('T')[0],
+    data: "",
     
     rg1: "",
     orgaoExpedidor1: "",
@@ -1072,7 +1072,7 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
               Salvar Rascunho
             </Button>
             <Button type="submit" variant="government" size="lg">
-              {onBack ? "Salvar Formulário" : "Avançar para Composição Familiar"}
+              {onBack ? "Salvar e Continuar" : "Avançar para Composição Familiar"}
             </Button>
           </div>
         </div>

@@ -32,25 +32,10 @@ interface FamilyCompositionFormProps {
 export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: FamilyCompositionFormProps) => {
   const { toast } = useToast();
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(
-    initialData.length > 0 ? initialData : [
-      {
-        id: '1',
-        nome: '',
-        parentesco: 'Responsável',
-        sexo: '',
-        idade: '',
-        estuda: '',
-        escolaridade: '',
-        cidadeTrabalha: '',
-        profissao: '',
-        renda: '',
-        origemRenda: '',
-        doencaDeficiencia: 'Não existe'
-      }
-    ]
+    initialData.length > 0 ? initialData : []
   );
   
-  const [editingId, setEditingId] = useState<string | null>('1');
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [newMember, setNewMember] = useState<Partial<FamilyMember>>({});
 
   const parentescoOptions = [
@@ -501,7 +486,7 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
             Salvar Rascunho
           </Button>
           <Button onClick={handleSubmit} variant="government" size="lg">
-            {onBack ? "Salvar Formulário" : "Avançar para Documentos"}
+            {onBack ? "Salvar e Continuar" : "Avançar para Documentos"}
           </Button>
         </div>
       </div>

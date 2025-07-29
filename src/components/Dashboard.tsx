@@ -37,6 +37,20 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
       variant: "government" as const
     },
     {
+      title: "Upload de Documentos",
+      description: "Enviar documentos necessários",
+      icon: Upload,
+      action: () => onNavigate('documents'),
+      variant: "secondary" as const
+    },
+    {
+      title: "Termo de Concordância",
+      description: "Assinar termo de responsabilidade",
+      icon: CheckSquare,
+      action: () => onNavigate('terms'),
+      variant: "secondary" as const
+    },
+    {
       title: "Cadastros Pendentes",
       description: "Cadastros aguardando aprovação",
       value: "23",
@@ -76,6 +90,20 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
       icon: Users,
       action: () => onNavigate('family-composition'),
       variant: "government" as const
+    },
+    {
+      title: "Upload de Documentos",
+      description: "Enviar documentos necessários",
+      icon: Upload,
+      action: () => onNavigate('documents'),
+      variant: "secondary" as const
+    },
+    {
+      title: "Termo de Concordância",
+      description: "Assinar termo de responsabilidade",
+      icon: CheckSquare,
+      action: () => onNavigate('terms'),
+      variant: "secondary" as const
     },
     {
       title: "Novo Cadastro Completo",
