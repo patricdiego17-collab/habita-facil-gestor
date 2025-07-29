@@ -23,6 +23,20 @@ interface DashboardProps {
 export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) => {
   const adminCards = [
     {
+      title: "Formulário 1 – Cadastro Social",
+      description: "Acessar formulário de cadastro social",
+      icon: FileText,
+      action: () => onNavigate('social-registration'),
+      variant: "government" as const
+    },
+    {
+      title: "Formulário 2 – Composição Familiar", 
+      description: "Acessar formulário de composição familiar",
+      icon: Users,
+      action: () => onNavigate('family-composition'),
+      variant: "government" as const
+    },
+    {
       title: "Cadastros Pendentes",
       description: "Cadastros aguardando aprovação",
       value: "23",
@@ -39,14 +53,6 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
       variant: "default" as const
     },
     {
-      title: "Assistentes Ativos",
-      description: "Assistentes sociais ativos",
-      value: "12",
-      icon: UserCheck,
-      action: () => onNavigate('social-workers'),
-      variant: "default" as const
-    },
-    {
       title: "Relatórios",
       description: "Visualizar relatórios e estatísticas",
       value: "",
@@ -58,11 +64,25 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
 
   const socialWorkerCards = [
     {
-      title: "Novo Cadastro",
-      description: "Iniciar novo cadastro social",
+      title: "Formulário 1 – Cadastro Social",
+      description: "Acessar formulário de cadastro social",
+      icon: FileText,
+      action: () => onNavigate('social-registration'),
+      variant: "government" as const
+    },
+    {
+      title: "Formulário 2 – Composição Familiar",
+      description: "Acessar formulário de composição familiar", 
+      icon: Users,
+      action: () => onNavigate('family-composition'),
+      variant: "government" as const
+    },
+    {
+      title: "Novo Cadastro Completo",
+      description: "Iniciar cadastro completo (todos os formulários)",
       icon: Plus,
       action: () => onNavigate('new-registration'),
-      variant: "government" as const
+      variant: "secondary" as const
     },
     {
       title: "Meus Cadastros",

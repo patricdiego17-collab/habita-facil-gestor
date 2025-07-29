@@ -55,20 +55,27 @@ const Index = () => {
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard userRole={user.role} userName={user.name} onNavigate={handleNavigate} />;
-      case 'new-registration':
+      case 'social-registration':
         return <SocialRegistrationForm 
           onNext={(data) => {
             setFormData(prev => ({ ...prev, socialRegistration: data }));
-            setCurrentPage('family-composition');
+            setCurrentPage('dashboard');
           }}
         />;
       case 'family-composition':
         return <FamilyCompositionForm 
           onNext={(data) => {
             setFormData(prev => ({ ...prev, familyComposition: data }));
-            setCurrentPage('documents');
+            setCurrentPage('dashboard');
           }}
-          onBack={() => setCurrentPage('new-registration')}
+          onBack={() => setCurrentPage('dashboard')}
+        />;
+      case 'new-registration':
+        return <SocialRegistrationForm 
+          onNext={(data) => {
+            setFormData(prev => ({ ...prev, socialRegistration: data }));
+            setCurrentPage('family-composition');
+          }}
         />;
       case 'documents':
         return <DocumentUploadForm 
