@@ -25,7 +25,7 @@ interface FamilyMember {
 
 interface FamilyCompositionFormProps {
   onNext: (data: FamilyMember[]) => void;
-  onBack: () => void;
+  onBack?: () => void;
   initialData?: FamilyMember[];
 }
 
@@ -489,15 +489,19 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
 
       {/* Botões de Ação */}
       <div className="flex justify-between">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Voltar para Cadastro Social
-        </Button>
+        {onBack ? (
+          <Button type="button" variant="outline" onClick={onBack}>
+            Voltar
+          </Button>
+        ) : (
+          <div></div>
+        )}
         <div className="space-x-4">
           <Button type="button" variant="outline">
             Salvar Rascunho
           </Button>
           <Button onClick={handleSubmit} variant="government" size="lg">
-            Avançar para Documentos
+            {onBack ? "Salvar Formulário" : "Avançar para Documentos"}
           </Button>
         </div>
       </div>

@@ -89,10 +89,11 @@ interface SocialRegistrationData {
 
 interface SocialRegistrationFormProps {
   onNext: (data: SocialRegistrationData) => void;
+  onBack?: () => void;
   initialData?: Partial<SocialRegistrationData>;
 }
 
-export const SocialRegistrationForm = ({ onNext, initialData }: SocialRegistrationFormProps) => {
+export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRegistrationFormProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<SocialRegistrationData>({
     nucleo: "",
@@ -1059,12 +1060,21 @@ export const SocialRegistrationForm = ({ onNext, initialData }: SocialRegistrati
 
         {/* Botões de Ação */}
         <div className="flex justify-between">
-          <Button type="button" variant="outline">
-            Salvar Rascunho
-          </Button>
-          <Button type="submit" variant="government" size="lg">
-            Avançar para Composição Familiar
-          </Button>
+          {onBack ? (
+            <Button type="button" variant="outline" onClick={onBack}>
+              Voltar
+            </Button>
+          ) : (
+            <div></div>
+          )}
+          <div className="space-x-4">
+            <Button type="button" variant="outline">
+              Salvar Rascunho
+            </Button>
+            <Button type="submit" variant="government" size="lg">
+              {onBack ? "Salvar Formulário" : "Avançar para Composição Familiar"}
+            </Button>
+          </div>
         </div>
       </form>
     </div>

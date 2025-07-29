@@ -61,6 +61,7 @@ const Index = () => {
             setFormData(prev => ({ ...prev, socialRegistration: data }));
             setCurrentPage('dashboard');
           }}
+          onBack={() => setCurrentPage('dashboard')}
         />;
       case 'family-composition':
         return <FamilyCompositionForm 
