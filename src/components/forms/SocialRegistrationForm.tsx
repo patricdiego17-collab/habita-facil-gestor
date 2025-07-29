@@ -19,6 +19,7 @@ interface SocialRegistrationData {
   data: string;
 
   // 1º Responsável
+  nome1: string;
   rg1: string;
   orgaoExpedidor1: string;
   uf1: string;
@@ -36,6 +37,7 @@ interface SocialRegistrationData {
   empregado1: boolean;
 
   // 2º Responsável
+  nome2: string;
   rg2: string;
   orgaoExpedidor2: string;
   uf2: string;
@@ -102,6 +104,7 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
     entrevistador: "",
     data: "",
     
+    nome1: "",
     rg1: "",
     orgaoExpedidor1: "",
     uf1: "",
@@ -118,6 +121,7 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
     profissao1: "",
     empregado1: false,
 
+    nome2: "",
     rg2: "",
     orgaoExpedidor2: "",
     uf2: "",
@@ -172,10 +176,10 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
     e.preventDefault();
     
     // Validações básicas
-    if (!formData.rg1 || !formData.cpf1 || !formData.endereco) {
+    if (!formData.nome1 || !formData.rg1 || !formData.cpf1 || !formData.endereco) {
       toast({
         title: "Campos obrigatórios",
-        description: "Por favor, preencha pelo menos RG, CPF e endereço do 1º responsável.",
+        description: "Por favor, preencha pelo menos nome, RG, CPF e endereço do 1º responsável.",
         variant: "destructive",
       });
       return;
@@ -269,6 +273,15 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="nome1">Nome Completo *</Label>
+                <Input
+                  id="nome1"
+                  value={formData.nome1}
+                  onChange={(e) => handleInputChange('nome1', e.target.value)}
+                  required
+                />
+              </div>
               <div>
                 <Label htmlFor="rg1">RG *</Label>
                 <Input
@@ -433,6 +446,14 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="nome2">Nome Completo</Label>
+                <Input
+                  id="nome2"
+                  value={formData.nome2}
+                  onChange={(e) => handleInputChange('nome2', e.target.value)}
+                />
+              </div>
               <div>
                 <Label htmlFor="rg2">RG</Label>
                 <Input
