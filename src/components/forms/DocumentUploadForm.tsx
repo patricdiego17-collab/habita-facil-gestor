@@ -387,7 +387,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
       {/* Botões de Ação */}
       <div className="flex justify-between mt-8">
         <Button type="button" variant="outline" onClick={onBack}>
-          Voltar para Composição Familiar
+          Voltar
         </Button>
         <div className="space-x-4">
           <Button type="button" variant="outline">

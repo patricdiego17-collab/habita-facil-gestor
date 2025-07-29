@@ -106,7 +106,7 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
       variant: "secondary" as const
     },
     {
-      title: "Novo Cadastro Completo",
+      title: "Cadastro (Sequencial Completo)",
       description: "Iniciar cadastro completo (todos os formulários)",
       icon: Plus,
       action: () => onNavigate('new-registration'),

@@ -107,12 +107,19 @@ const Index = () => {
         return <DocumentUploadForm 
           onNext={(data) => {
             setFormData(prev => ({ ...prev, documents: data }));
-            setCurrentPage('terms');
+            // Se foi acessado individualmente, volta para dashboard
+            // Se foi do fluxo completo, avança para terms
+            if (formData.socialRegistration && formData.familyComposition) {
+              setCurrentPage('terms');
+            } else {
+              alert('Documentos salvos com sucesso!');
+              setCurrentPage('dashboard');
+            }
           }}
           onBack={() => {
             // Se veio do fluxo completo, volta para family-composition-flow
             // Se veio individualmente, volta para dashboard
-            if (formData.familyComposition) {
+            if (formData.socialRegistration && formData.familyComposition) {
               setCurrentPage('family-composition-flow');
             } else {
               setCurrentPage('dashboard');
@@ -132,7 +139,15 @@ const Index = () => {
             }
             setCurrentPage('dashboard');
           }}
-          onBack={() => setCurrentPage('documents')}
+          onBack={() => {
+            // Se veio do fluxo completo, volta para documents
+            // Se veio individualmente, volta para dashboard
+            if (formData.socialRegistration && formData.familyComposition && formData.documents) {
+              setCurrentPage('documents');
+            } else {
+              setCurrentPage('dashboard');
+            }
+          }}
         />;
       default:
         return <div className="container mx-auto px-4 py-8">
