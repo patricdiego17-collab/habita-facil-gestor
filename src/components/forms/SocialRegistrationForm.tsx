@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { CalendarDays, MapPin, User, Home, Zap } from "lucide-react";
+import { CalendarDays, MapPin, User, Home, Zap, Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SocialRegistrationData {
   // Informações do Cadastro
@@ -97,6 +98,7 @@ interface SocialRegistrationFormProps {
 
 export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRegistrationFormProps) => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<SocialRegistrationData>({
     nucleo: "",
     ctm: "",
@@ -172,8 +174,9 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
     // Validações básicas
     if (!formData.nome1 || !formData.rg1 || !formData.cpf1 || !formData.endereco) {
@@ -182,14 +185,71 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
         description: "Por favor, preencha pelo menos nome, RG, CPF e endereço do 1º responsável.",
         variant: "destructive",
       });
+      setIsLoading(false);
       return;
     }
 
-    onNext(formData);
-    toast({
-      title: "Formulário 1 concluído",
-      description: "Avançando para composição familiar...",
-    });
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Usuário não está logado",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Save to database
+      const { error } = await supabase
+        .from('social_registrations')
+        .insert({
+          user_id: user.id,
+          name: formData.nome1,
+          cpf: formData.cpf1,
+          rg: formData.rg1,
+          birth_date: formData.dataNascimento1 || null,
+          phone: formData.telefones,
+          address: `${formData.endereco}, ${formData.numero}`,
+          neighborhood: formData.bairro,
+          city: 'Itapecerica da Serra',
+          state: 'SP',
+          marital_status: formData.estadoCivil1,
+          profession: formData.profissao1,
+          emergency_contact_name: formData.nome2 || null,
+          housing_situation: formData.condicaoMoradia,
+          observations: formData.observacoes,
+        });
+
+      if (error) {
+        console.error('Error saving social registration:', error);
+        toast({
+          title: "Erro ao salvar",
+          description: "Não foi possível salvar os dados. Tente novamente.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      onNext(formData);
+      toast({
+        title: "Formulário 1 salvo",
+        description: "Dados salvos com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const ufs = [
@@ -1082,18 +1142,26 @@ export const SocialRegistrationForm = ({ onNext, onBack, initialData }: SocialRe
         {/* Botões de Ação */}
         <div className="flex justify-between">
           {onBack ? (
-            <Button type="button" variant="outline" onClick={onBack}>
+            <Button type="button" variant="outline" onClick={onBack} disabled={isLoading}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
           ) : (
             <div></div>
           )}
           <div className="space-x-4">
-            <Button type="button" variant="outline">
+            <Button type="button" variant="outline" disabled={isLoading}>
               Salvar Rascunho
             </Button>
-            <Button type="submit" variant="government" size="lg">
-              {onBack ? "Salvar e Continuar" : "Avançar para Composição Familiar"}
+            <Button type="submit" variant="government" size="lg" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                onBack ? "Salvar e Continuar" : "Avançar para Composição Familiar"
+              )}
             </Button>
           </div>
         </div>

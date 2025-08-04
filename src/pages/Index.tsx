@@ -1,16 +1,23 @@
-import { useState } from "react";
-import { LoginForm } from "@/components/auth/LoginForm";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { Header } from "@/components/Header";
 import { Dashboard } from "@/components/Dashboard";
 import { SocialRegistrationForm } from "@/components/forms/SocialRegistrationForm";
 import { FamilyCompositionForm } from "@/components/forms/FamilyCompositionForm";
 import { DocumentUploadForm } from "@/components/forms/DocumentUploadForm";
 import { TermsAgreementForm } from "@/components/forms/TermsAgreementForm";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
-interface User {
+interface UserProfile {
+  id: string;
+  full_name: string;
   email: string;
   role: 'admin' | 'social_worker' | 'citizen';
-  name: string;
 }
 
 interface FormDataState {
@@ -24,7 +31,11 @@ interface FormDataState {
 }
 
 const Index = () => {
-  const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [formData, setFormData] = useState<FormDataState>({
     socialRegistration: null,
@@ -33,38 +44,91 @@ const Index = () => {
     signature: null
   });
 
-  const handleLogin = (credentials: { email: string; password: string; role: string }) => {
-    const userData: User = {
-      email: credentials.email,
-      role: credentials.role as 'admin' | 'social_worker' | 'citizen',
-      name: getNameFromEmail(credentials.email)
-    };
-    
-    setUser(userData);
-    setCurrentPage('dashboard');
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch user profile
+          setTimeout(async () => {
+            await fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUserProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Erro ao carregar perfil do usuário');
+        return;
+      }
+
+      if (data) {
+        setUserProfile({
+          id: data.id,
+          full_name: data.full_name || data.email || 'Usuário',
+          email: data.email || '',
+          role: (data.role as 'admin' | 'social_worker' | 'citizen') || 'citizen'
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setCurrentPage('dashboard');
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success('Logout realizado com sucesso!');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast.error('Erro ao fazer logout');
+    }
   };
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
   };
 
-  const getNameFromEmail = (email: string) => {
-    // Simple name extraction from email for demo
-    const namePart = email.split('@')[0];
-    return namePart.charAt(0).toUpperCase() + namePart.slice(1);
-  };
-
   const renderCurrentPage = () => {
-    if (!user) return null;
+    if (!userProfile) return null;
 
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard userRole={user.role} userName={user.name} onNavigate={handleNavigate} />;
+        return <Dashboard userRole={userProfile.role} userName={userProfile.full_name} onNavigate={handleNavigate} />;
       case 'social-registration':
         return <SocialRegistrationForm 
           onNext={(data) => {
@@ -157,15 +221,41 @@ const Index = () => {
     }
   };
 
-  if (!user) {
-    return <LoginForm onLogin={handleLogin} />;
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/src/assets/itapecerica-logo.png" 
+                alt="Itapecerica da Serra" 
+                className="h-16 w-auto"
+              />
+            </div>
+            <CardTitle>HabitaFácil</CardTitle>
+            <CardDescription>Carregando...</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Redirect to auth if not logged in
+  if (!user || !userProfile) {
+    navigate('/auth');
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Header 
-        userRole={user.role} 
-        userName={user.name} 
+        userRole={userProfile.role} 
+        userName={userProfile.full_name} 
         onLogout={handleLogout} 
       />
       {renderCurrentPage()}
