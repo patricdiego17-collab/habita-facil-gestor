@@ -14,7 +14,270 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      documents: {
+        Row: {
+          document_name: string
+          document_type: string
+          file_path: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          observations: string | null
+          social_registration_id: string | null
+          status: string | null
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          document_name: string
+          document_type: string
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          observations?: string | null
+          social_registration_id?: string | null
+          status?: string | null
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          document_name?: string
+          document_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          observations?: string | null
+          social_registration_id?: string | null
+          status?: string | null
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_social_registration_id_fkey"
+            columns: ["social_registration_id"]
+            isOneToOne: false
+            referencedRelation: "social_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_compositions: {
+        Row: {
+          age: number | null
+          cpf: string | null
+          created_at: string
+          disability_description: string | null
+          education: string | null
+          has_disability: boolean | null
+          id: string
+          income: number | null
+          member_name: string
+          profession: string | null
+          relationship: string
+          social_registration_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          cpf?: string | null
+          created_at?: string
+          disability_description?: string | null
+          education?: string | null
+          has_disability?: boolean | null
+          id?: string
+          income?: number | null
+          member_name: string
+          profession?: string | null
+          relationship: string
+          social_registration_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          cpf?: string | null
+          created_at?: string
+          disability_description?: string | null
+          education?: string | null
+          has_disability?: boolean | null
+          id?: string
+          income?: number | null
+          member_name?: string
+          profession?: string | null
+          relationship?: string
+          social_registration_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_compositions_social_registration_id_fkey"
+            columns: ["social_registration_id"]
+            isOneToOne: false
+            referencedRelation: "social_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_registrations: {
+        Row: {
+          address: string | null
+          benefits_description: string | null
+          birth_date: string | null
+          city: string | null
+          cpf: string
+          created_at: string
+          education: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          has_children: boolean | null
+          housing_situation: string | null
+          id: string
+          income: number | null
+          marital_status: string | null
+          name: string
+          neighborhood: string | null
+          observations: string | null
+          phone: string | null
+          profession: string | null
+          receives_benefits: boolean | null
+          rg: string | null
+          state: string | null
+          status: string | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          benefits_description?: string | null
+          birth_date?: string | null
+          city?: string | null
+          cpf: string
+          created_at?: string
+          education?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          has_children?: boolean | null
+          housing_situation?: string | null
+          id?: string
+          income?: number | null
+          marital_status?: string | null
+          name: string
+          neighborhood?: string | null
+          observations?: string | null
+          phone?: string | null
+          profession?: string | null
+          receives_benefits?: boolean | null
+          rg?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          benefits_description?: string | null
+          birth_date?: string | null
+          city?: string | null
+          cpf?: string
+          created_at?: string
+          education?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          has_children?: boolean | null
+          housing_situation?: string | null
+          id?: string
+          income?: number | null
+          marital_status?: string | null
+          name?: string
+          neighborhood?: string | null
+          observations?: string | null
+          phone?: string | null
+          profession?: string | null
+          receives_benefits?: boolean | null
+          rg?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      terms_agreements: {
+        Row: {
+          acceptance_date: string
+          id: string
+          ip_address: string | null
+          social_registration_id: string | null
+          terms_accepted: boolean
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          acceptance_date?: string
+          id?: string
+          ip_address?: string | null
+          social_registration_id?: string | null
+          terms_accepted?: boolean
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          acceptance_date?: string
+          id?: string
+          ip_address?: string | null
+          social_registration_id?: string | null
+          terms_accepted?: boolean
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "terms_agreements_social_registration_id_fkey"
+            columns: ["social_registration_id"]
+            isOneToOne: false
+            referencedRelation: "social_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
