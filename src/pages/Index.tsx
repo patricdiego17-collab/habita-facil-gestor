@@ -9,6 +9,7 @@ import { SocialRegistrationForm } from "@/components/forms/SocialRegistrationFor
 import { FamilyCompositionForm } from "@/components/forms/FamilyCompositionForm";
 import { DocumentUploadForm } from "@/components/forms/DocumentUploadForm";
 import { TermsAgreementForm } from "@/components/forms/TermsAgreementForm";
+import { MyDataPage } from "@/components/MyDataPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -45,38 +46,58 @@ const Index = () => {
   });
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    let mounted = true;
+
+    // Check for existing session first
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile
-          setTimeout(async () => {
-            await fetchUserProfile(session.user.id);
+          await fetchUserProfile(session.user.id);
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) return;
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Use setTimeout to avoid blocking auth state change
+          setTimeout(() => {
+            if (mounted) {
+              fetchUserProfile(session.user.id);
+            }
           }, 0);
         } else {
           setUserProfile(null);
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
+    checkSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
@@ -213,6 +234,12 @@ const Index = () => {
             }
           }}
         />;
+      case 'my-data':
+        return <MyDataPage 
+          userProfile={userProfile}
+          onBack={() => setCurrentPage('dashboard')}
+          onNavigate={handleNavigate}
+        />;
       default:
         return <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6">Página em Desenvolvimento</h1>
@@ -246,9 +273,33 @@ const Index = () => {
   }
 
   // Redirect to auth if not logged in
-  if (!user || !userProfile) {
+  if (!user) {
     navigate('/auth');
     return null;
+  }
+
+  // Show loading if user exists but profile is still loading
+  if (!userProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/src/assets/itapecerica-logo.png" 
+                alt="Itapecerica da Serra" 
+                className="h-16 w-auto"
+              />
+            </div>
+            <CardTitle>HabitaFácil</CardTitle>
+            <CardDescription>Carregando perfil...</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

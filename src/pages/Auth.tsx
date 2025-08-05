@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [userRole, setUserRole] = useState<'citizen' | 'social_worker' | 'admin'>('citizen');
 
   useEffect(() => {
     // Check if user is already logged in
@@ -95,6 +97,7 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            role: userRole,
           },
         },
       });
@@ -115,6 +118,7 @@ const Auth = () => {
       setSignupPassword("");
       setSignupConfirmPassword("");
       setFullName("");
+      setUserRole('citizen');
     } catch (err) {
       setError("Erro inesperado. Tente novamente.");
     } finally {
@@ -268,6 +272,20 @@ const Auth = () => {
                     onChange={(e) => setSignupConfirmPassword(e.target.value)}
                     required
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="user-role">Tipo de Usuário</Label>
+                  <Select value={userRole} onValueChange={(value: 'citizen' | 'social_worker' | 'admin') => setUserRole(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de usuário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="citizen">Cidadão</SelectItem>
+                      <SelectItem value="social_worker">Assistente Social</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {error && (

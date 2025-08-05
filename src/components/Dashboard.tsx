@@ -132,11 +132,18 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
 
   const citizenCards = [
     {
-      title: "Meu Cadastro",
-      description: "Visualizar status do meu cadastro",
+      title: "Meus Dados",
+      description: "Ver histórico e documentos enviados",
       icon: FileText,
-      action: () => onNavigate('my-registration'),
+      action: () => onNavigate('my-data'),
       variant: "default" as const
+    },
+    {
+      title: "Novo Cadastro",
+      description: "Iniciar novo cadastro social",
+      icon: Plus,
+      action: () => onNavigate('new-registration'),
+      variant: "government" as const
     },
     {
       title: "Documentos",
