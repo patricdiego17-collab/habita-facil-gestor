@@ -153,9 +153,43 @@ export type Database = {
         }
         Relationships: []
       }
+      registration_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          social_registration_id: string
+          status: string
+          updated_at: string
+          updated_by: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          social_registration_id: string
+          status: string
+          updated_at?: string
+          updated_by: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          social_registration_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_registrations: {
         Row: {
           address: string | null
+          assigned_social_worker_id: string | null
           benefits_description: string | null
           birth_date: string | null
           city: string | null
@@ -184,6 +218,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_social_worker_id?: string | null
           benefits_description?: string | null
           birth_date?: string | null
           city?: string | null
@@ -212,6 +247,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_social_worker_id?: string | null
           benefits_description?: string | null
           birth_date?: string | null
           city?: string | null

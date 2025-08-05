@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
 import { Header } from "@/components/Header";
-import { Dashboard } from "@/components/Dashboard";
+import { DashboardWrapper } from "@/components/DashboardWrapper";
 import { SocialRegistrationForm } from "@/components/forms/SocialRegistrationForm";
 import { FamilyCompositionForm } from "@/components/forms/FamilyCompositionForm";
 import { DocumentUploadForm } from "@/components/forms/DocumentUploadForm";
@@ -148,8 +148,8 @@ const Index = () => {
     if (!userProfile) return null;
 
     switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard userRole={userProfile.role} userName={userProfile.full_name} onNavigate={handleNavigate} />;
+      case 'dashboard-legacy':
+        return <div>Dashboard Legacy</div>;
       case 'social-registration':
         return <SocialRegistrationForm 
           onNext={(data) => {
@@ -240,11 +240,16 @@ const Index = () => {
           onBack={() => setCurrentPage('dashboard')}
           onNavigate={handleNavigate}
         />;
+      case 'dashboard':
       default:
-        return <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-6">Página em Desenvolvimento</h1>
-          <p className="text-muted-foreground">Esta funcionalidade será implementada em breve.</p>
-        </div>;
+        return (
+          <DashboardWrapper 
+            userRole={userProfile.role || 'citizen'} 
+            userName={userProfile.full_name || 'Usuário'} 
+            onNavigate={handleNavigate}
+            userProfile={userProfile}
+          />
+        );
     }
   };
 

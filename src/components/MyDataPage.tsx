@@ -21,15 +21,24 @@ import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
-  full_name: string;
-  email: string;
-  role: 'admin' | 'social_worker' | 'citizen';
+  full_name: string | null;
+  email: string | null;
+  role: string | null;
 }
 
 interface MyDataPageProps {
   userProfile: UserProfile;
   onBack: () => void;
   onNavigate: (page: string) => void;
+}
+
+interface RegistrationTracking {
+  id: string;
+  status: string;
+  message: string | null;
+  created_at: string;
+  updated_by: string;
+  updated_by_name?: string;
 }
 
 interface SocialRegistration {
@@ -64,6 +73,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
   const [socialRegistration, setSocialRegistration] = useState<SocialRegistration | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [tracking, setTracking] = useState<RegistrationTracking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -177,12 +187,13 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
         </Button>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Resumo</TabsTrigger>
           <TabsTrigger value="registration">Cadastro Social</TabsTrigger>
           <TabsTrigger value="family">Família</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
+          <TabsTrigger value="tracking">Acompanhamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -420,6 +431,51 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="tracking" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Histórico de Acompanhamento
+              </CardTitle>
+              <CardDescription>
+                Acompanhe o status e evolução do seu cadastro
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {tracking.length > 0 ? (
+                <div className="space-y-4">
+                  {tracking.map((item) => (
+                    <div key={item.id} className="border-l-2 border-primary pl-4 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        {getStatusBadge(item.status)}
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(item.created_at)}
+                        </span>
+                      </div>
+                      {item.message && (
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {item.message}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Atualizado por: {item.updated_by_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum histórico de acompanhamento encontrado.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
