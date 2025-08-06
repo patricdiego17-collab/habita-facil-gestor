@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Users, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FamilyMember {
   id: string;
@@ -138,7 +139,7 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (familyMembers.length === 0) {
       toast({
         title: "Lista vazia",
@@ -170,11 +171,82 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
       return;
     }
 
-    onNext(familyMembers);
-    toast({
-      title: "Composição familiar concluída",
-      description: "Avançando para upload de documentos...",
-    });
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Usuário não está logado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the user's social registration
+      const { data: socialRegistration } = await supabase
+        .from('social_registrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (socialRegistration) {
+        // Delete existing family compositions for this registration
+        await supabase
+          .from('family_compositions')
+          .delete()
+          .eq('social_registration_id', socialRegistration.id);
+
+        // Save family members to database
+        const familyData = familyMembers.map(member => ({
+          user_id: user.id,
+          social_registration_id: socialRegistration.id,
+          member_name: member.nome,
+          relationship: member.parentesco,
+          age: parseInt(member.idade) || null,
+          education: member.escolaridade,
+          profession: member.profissao,
+          income: parseFloat(member.renda.replace(/[^\d,]/g, '').replace(',', '.')) || 0,
+          has_disability: member.doencaDeficiencia !== 'Não existe',
+          disability_description: member.doencaDeficiencia !== 'Não existe' ? member.doencaDeficiencia : null,
+        }));
+
+        const { error } = await supabase
+          .from('family_compositions')
+          .insert(familyData);
+
+        if (error) {
+          console.error('Error saving family composition:', error);
+          toast({
+            title: "Erro ao salvar",
+            description: "Não foi possível salvar a composição familiar. Tente novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Composição familiar salva",
+          description: "Dados salvos com sucesso!",
+        });
+      }
+
+      onNext(familyMembers);
+      toast({
+        title: "Composição familiar concluída",
+        description: "Avançando para upload de documentos...",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    }
   };
 
   const EditableCell = ({ 

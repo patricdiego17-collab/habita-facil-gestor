@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Image, CheckCircle, X, AlertTriangle, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UploadedFile {
   id: string;
@@ -134,7 +135,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
     };
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const requiredStatus = getRequiredDocumentsStatus();
     
     if (requiredStatus.completed < requiredStatus.total) {
@@ -166,11 +167,82 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
       return;
     }
 
-    onNext(uploadedFiles);
-    toast({
-      title: "Documentos enviados com sucesso",
-      description: "Avançando para o termo de concordância...",
-    });
+    try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Usuário não está logado",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the user's social registration
+      const { data: socialRegistration } = await supabase
+        .from('social_registrations')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (socialRegistration) {
+        // Delete existing documents for this registration
+        await supabase
+          .from('documents')
+          .delete()
+          .eq('social_registration_id', socialRegistration.id);
+
+        // Save documents to database
+        const documentsData = uploadedFiles.filter(file => file.status === 'success').map(file => ({
+          user_id: user.id,
+          social_registration_id: socialRegistration.id,
+          document_name: file.name,
+          document_type: file.category,
+          file_type: file.type,
+          file_size: file.size,
+          file_path: file.url || '',
+          status: 'uploaded'
+        }));
+
+        if (documentsData.length > 0) {
+          const { error } = await supabase
+            .from('documents')
+            .insert(documentsData);
+
+          if (error) {
+            console.error('Error saving documents:', error);
+            toast({
+              title: "Erro ao salvar",
+              description: "Não foi possível salvar os documentos. Tente novamente.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          toast({
+            title: "Documentos salvos",
+            description: "Documentos salvos com sucesso!",
+          });
+        }
+      }
+
+      onNext(uploadedFiles);
+      toast({
+        title: "Documentos enviados com sucesso",
+        description: "Avançando para o termo de concordância...",
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Erro inesperado",
+        description: "Tente novamente em alguns instantes.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatFileSize = (bytes: number) => {
