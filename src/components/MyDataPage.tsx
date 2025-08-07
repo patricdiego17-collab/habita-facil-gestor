@@ -87,7 +87,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: socialData, error: socialError } = await supabase
         .from('social_registrations')
         .select('*')
-        .eq('user_id', userProfile.id)
+        .eq('user_id', userProfile.user_id)
         .maybeSingle();
 
       if (socialError) {
@@ -100,7 +100,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: familyData, error: familyError } = await supabase
         .from('family_compositions')
         .select('*')
-        .eq('user_id', userProfile.id);
+        .eq('user_id', userProfile.user_id);
 
       if (familyError) {
         console.error('Error loading family data:', familyError);
@@ -112,12 +112,34 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', userProfile.id);
+        .eq('user_id', userProfile.user_id);
 
       if (documentsError) {
         console.error('Error loading documents:', documentsError);
       } else {
         setDocuments(documentsData || []);
+      }
+
+      // Load tracking data if social registration exists
+      if (socialData) {
+        const { data: trackingData, error: trackingError } = await supabase
+          .from('registration_tracking')
+          .select(`
+            *,
+            updated_by_profile:profiles!registration_tracking_updated_by_fkey(full_name)
+          `)
+          .eq('social_registration_id', socialData.id)
+          .order('created_at', { ascending: false });
+
+        if (trackingError) {
+          console.error('Error loading tracking data:', trackingError);
+        } else {
+          const trackingWithNames = (trackingData || []).map(item => ({
+            ...item,
+            updated_by_name: item.updated_by_profile?.full_name || 'Sistema'
+          }));
+          setTracking(trackingWithNames);
+        }
       }
 
     } catch (error) {
