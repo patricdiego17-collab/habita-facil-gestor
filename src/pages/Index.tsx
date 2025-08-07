@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 
 interface UserProfile {
   id: string;
+  user_id: string;
   full_name: string;
   email: string;
   role: 'admin' | 'social_worker' | 'citizen';
@@ -117,6 +118,7 @@ const Index = () => {
       if (data) {
         setUserProfile({
           id: data.id,
+          user_id: data.user_id,
           full_name: data.full_name || data.email || 'Usuário',
           email: data.email || '',
           role: (data.role as 'admin' | 'social_worker' | 'citizen') || 'citizen'

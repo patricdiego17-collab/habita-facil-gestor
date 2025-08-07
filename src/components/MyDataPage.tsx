@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 interface UserProfile {
   id: string;
+  user_id: string;
   full_name: string | null;
   email: string | null;
   role: string | null;
@@ -83,14 +84,11 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
   const loadUserData = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       // Load social registration
       const { data: socialData, error: socialError } = await supabase
         .from('social_registrations')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userProfile.user_id)
         .maybeSingle();
 
       if (socialError) {
@@ -103,7 +101,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: familyData, error: familyError } = await supabase
         .from('family_compositions')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userProfile.user_id);
 
       if (familyError) {
         console.error('Error loading family data:', familyError);
@@ -115,7 +113,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', userProfile.user_id);
 
       if (documentsError) {
         console.error('Error loading documents:', documentsError);
@@ -141,7 +139,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
                 .from('profiles')
                 .select('full_name')
                 .eq('user_id', item.updated_by)
-                .single();
+                .maybeSingle();
               
               return {
                 ...item,
