@@ -205,7 +205,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
           file_type: file.type,
           file_size: file.size,
           file_path: file.url || '',
-          status: 'uploaded'
+          status: 'pending'
         }));
 
         if (documentsData.length > 0) {
