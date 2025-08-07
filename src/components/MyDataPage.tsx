@@ -83,11 +83,14 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
   const loadUserData = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // Load social registration
       const { data: socialData, error: socialError } = await supabase
         .from('social_registrations')
         .select('*')
-        .eq('user_id', userProfile.user_id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (socialError) {
@@ -100,7 +103,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: familyData, error: familyError } = await supabase
         .from('family_compositions')
         .select('*')
-        .eq('user_id', userProfile.user_id);
+        .eq('user_id', user.id);
 
       if (familyError) {
         console.error('Error loading family data:', familyError);
@@ -112,7 +115,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       const { data: documentsData, error: documentsError } = await supabase
         .from('documents')
         .select('*')
-        .eq('user_id', userProfile.user_id);
+        .eq('user_id', user.id);
 
       if (documentsError) {
         console.error('Error loading documents:', documentsError);
@@ -124,20 +127,28 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       if (socialData) {
         const { data: trackingData, error: trackingError } = await supabase
           .from('registration_tracking')
-          .select(`
-            *,
-            updated_by_profile:profiles!registration_tracking_updated_by_fkey(full_name)
-          `)
+          .select('*')
           .eq('social_registration_id', socialData.id)
           .order('created_at', { ascending: false });
 
         if (trackingError) {
           console.error('Error loading tracking data:', trackingError);
         } else {
-          const trackingWithNames = (trackingData || []).map(item => ({
-            ...item,
-            updated_by_name: item.updated_by_profile?.full_name || 'Sistema'
-          }));
+          // Get profile names for each tracking entry
+          const trackingWithNames = await Promise.all(
+            (trackingData || []).map(async (item) => {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', item.updated_by)
+                .single();
+              
+              return {
+                ...item,
+                updated_by_name: profile?.full_name || 'Sistema'
+              };
+            })
+          );
           setTracking(trackingWithNames);
         }
       }
