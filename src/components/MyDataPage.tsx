@@ -1,23 +1,32 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
-  FileText, 
+  Plus, 
+  User, 
   Users, 
-  Upload, 
+  FileText, 
+  Clock,
   Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  MessageCircle,
+  Upload,
   Edit,
   CheckCircle,
-  Clock,
   AlertTriangle,
   Download
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CommunicationPanel } from "./CommunicationPanel";
+import { DocumentCard } from "./DocumentCard";
+import { EditableDataCard } from "./EditableDataCard";
 
 interface UserProfile {
   id: string;
@@ -46,7 +55,25 @@ interface SocialRegistration {
   id: string;
   name: string;
   cpf: string;
+  rg?: string;
+  birth_date?: string;
   phone?: string;
+  marital_status?: string;
+  education?: string;
+  profession?: string;
+  income?: number;
+  housing_situation?: string;
+  address?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  has_children?: boolean;
+  receives_benefits?: boolean;
+  benefits_description?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  observations?: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -65,9 +92,13 @@ interface Document {
   id: string;
   document_name: string;
   document_type: string;
-  status: string;
+  file_path: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  status: string | null;
   upload_date: string;
-  file_path?: string;
+  observations: string | null;
+  social_registration_id?: string;
 }
 
 export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps) => {
@@ -159,21 +190,61 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
     }
   };
 
+  // Function to handle updating social registration data
+  const handleUpdateSocialRegistration = async (updatedData: Record<string, any>) => {
+    if (!socialRegistration?.id) return;
+
+    const { error } = await supabase
+      .from('social_registrations')
+      .update(updatedData)
+      .eq('id', socialRegistration.id);
+
+    if (error) {
+      throw new Error('Erro ao atualizar cadastro social');
+    }
+
+    // Reload data
+    await loadUserData();
+  };
+
+  // Function to handle deleting documents
+  const handleDocumentDelete = () => {
+    loadUserData(); // Reload to refresh the documents list
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
+      case 'aprovado_final':
+      case 'documento_aprovado':
         return <Badge variant="default" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Aprovado</Badge>;
       case 'pending':
+      case 'em_analise':
+      case 'cadastro_criado':
         return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
       case 'rejected':
+      case 'rejeitado_final':
+      case 'documento_rejeitado':
         return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Rejeitado</Badge>;
+      case 'documento_enviado':
+        return <Badge className="bg-blue-100 text-blue-800">Documento Enviado</Badge>;
+      case 'documentos_solicitados':
+        return <Badge className="bg-orange-100 text-orange-800">Documentos Solicitados</Badge>;
+      case 'documento_removido':
+        return <Badge className="bg-gray-100 text-gray-800">Documento Removido</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR');
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const formatCurrency = (value: number) => {
@@ -218,13 +289,14 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
         </Button>
       </div>
 
-        <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Resumo</TabsTrigger>
           <TabsTrigger value="registration">Cadastro Social</TabsTrigger>
           <TabsTrigger value="family">Família</TabsTrigger>
           <TabsTrigger value="documents">Documentos</TabsTrigger>
           <TabsTrigger value="tracking">Acompanhamento</TabsTrigger>
+          <TabsTrigger value="communication">Comunicação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -300,44 +372,69 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
 
         <TabsContent value="registration" className="space-y-6">
           {socialRegistration ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Dados do Cadastro Social</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => onNavigate('social-registration')}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Nome Completo</p>
-                    <p className="text-lg">{socialRegistration.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">CPF</p>
-                    <p className="text-lg">{socialRegistration.cpf}</p>
-                  </div>
-                  {socialRegistration.phone && (
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Telefone</p>
-                      <p className="text-lg">{socialRegistration.phone}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    {getStatusBadge(socialRegistration.status)}
-                  </div>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Criado em: {formatDate(socialRegistration.created_at)}</span>
-                  <span>Atualizado em: {formatDate(socialRegistration.updated_at)}</span>
-                </div>
-              </CardContent>
-            </Card>
+            <EditableDataCard
+              title="Dados do Cadastro Social"
+              canEdit={true}
+              onSave={handleUpdateSocialRegistration}
+              fields={[
+                { key: 'name', label: 'Nome Completo', type: 'text', value: socialRegistration.name, required: true },
+                { key: 'cpf', label: 'CPF', type: 'text', value: socialRegistration.cpf, required: true },
+                { key: 'rg', label: 'RG', type: 'text', value: socialRegistration.rg },
+                { key: 'birth_date', label: 'Data de Nascimento', type: 'date', value: socialRegistration.birth_date },
+                { key: 'phone', label: 'Telefone', type: 'text', value: socialRegistration.phone },
+                { 
+                  key: 'marital_status', 
+                  label: 'Estado Civil', 
+                  type: 'select', 
+                  value: socialRegistration.marital_status,
+                  options: [
+                    { value: 'solteiro', label: 'Solteiro(a)' },
+                    { value: 'casado', label: 'Casado(a)' },
+                    { value: 'divorciado', label: 'Divorciado(a)' },
+                    { value: 'viuvo', label: 'Viúvo(a)' },
+                    { value: 'uniao_estavel', label: 'União Estável' }
+                  ]
+                },
+                { 
+                  key: 'education', 
+                  label: 'Escolaridade', 
+                  type: 'select', 
+                  value: socialRegistration.education,
+                  options: [
+                    { value: 'fundamental_incompleto', label: 'Ensino Fundamental Incompleto' },
+                    { value: 'fundamental_completo', label: 'Ensino Fundamental Completo' },
+                    { value: 'medio_incompleto', label: 'Ensino Médio Incompleto' },
+                    { value: 'medio_completo', label: 'Ensino Médio Completo' },
+                    { value: 'superior_incompleto', label: 'Ensino Superior Incompleto' },
+                    { value: 'superior_completo', label: 'Ensino Superior Completo' },
+                    { value: 'pos_graduacao', label: 'Pós-graduação' }
+                  ]
+                },
+                { key: 'profession', label: 'Profissão', type: 'text', value: socialRegistration.profession },
+                { key: 'income', label: 'Renda', type: 'number', value: socialRegistration.income },
+                { 
+                  key: 'housing_situation', 
+                  label: 'Situação Habitacional', 
+                  type: 'select', 
+                  value: socialRegistration.housing_situation,
+                  options: [
+                    { value: 'casa_propria', label: 'Casa Própria' },
+                    { value: 'alugada', label: 'Alugada' },
+                    { value: 'cedida', label: 'Cedida' },
+                    { value: 'financiada', label: 'Financiada' },
+                    { value: 'outros', label: 'Outros' }
+                  ]
+                },
+                { key: 'address', label: 'Endereço', type: 'text', value: socialRegistration.address },
+                { key: 'neighborhood', label: 'Bairro', type: 'text', value: socialRegistration.neighborhood },
+                { key: 'city', label: 'Cidade', type: 'text', value: socialRegistration.city },
+                { key: 'state', label: 'Estado', type: 'text', value: socialRegistration.state },
+                { key: 'zip_code', label: 'CEP', type: 'text', value: socialRegistration.zip_code },
+                { key: 'emergency_contact_name', label: 'Nome do Contato de Emergência', type: 'text', value: socialRegistration.emergency_contact_name },
+                { key: 'emergency_contact_phone', label: 'Telefone do Contato de Emergência', type: 'text', value: socialRegistration.emergency_contact_phone },
+                { key: 'observations', label: 'Observações', type: 'textarea', value: socialRegistration.observations },
+              ]}
+            />
           ) : (
             <Card>
               <CardContent className="text-center py-12">
@@ -366,7 +463,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {familyMembers.map((member, index) => (
+                  {familyMembers.map((member) => (
                     <div key={member.id} className="border rounded-lg p-4">
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
@@ -412,56 +509,44 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-6">
-          {documents.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Documentos Enviados</CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => onNavigate('documents')}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Enviar Mais
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documentos Anexados
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => onNavigate('documents')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Anexar Documento
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {documents.length > 0 ? (
                 <div className="space-y-4">
                   {documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between border rounded-lg p-4">
-                      <div className="flex items-center space-x-4">
-                        <FileText className="h-8 w-8 text-primary" />
-                        <div>
-                          <p className="font-medium">{doc.document_name}</p>
-                          <p className="text-sm text-muted-foreground">{doc.document_type}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Enviado em {formatDate(doc.upload_date)}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {getStatusBadge(doc.status)}
-                        {doc.file_path && (
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                    <DocumentCard
+                      key={doc.id}
+                      document={doc}
+                      canDelete={true}
+                      onDelete={handleDocumentDelete}
+                    />
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Upload className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum documento enviado</h3>
-                <p className="text-muted-foreground mb-4">Faça upload dos documentos necessários.</p>
-                <Button onClick={() => onNavigate('documents')}>
-                  Enviar Documentos
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <div className="text-center py-12">
+                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium mb-2">Nenhum documento anexado</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Você ainda não possui documentos anexados ao seu cadastro.
+                  </p>
+                  <Button variant="outline" onClick={() => onNavigate('documents')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Anexar Documento
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="tracking" className="space-y-6">
@@ -469,7 +554,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Histórico de Acompanhamento
+                Histórico do Processo
               </CardTitle>
               <CardDescription>
                 Acompanhe o status e evolução do seu cadastro
@@ -477,25 +562,45 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
             </CardHeader>
             <CardContent>
               {tracking.length > 0 ? (
-                <div className="space-y-4">
-                  {tracking.map((item) => (
-                    <div key={item.id} className="border-l-2 border-primary pl-4 pb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        {getStatusBadge(item.status)}
-                        <span className="text-sm text-muted-foreground">
-                          {formatDate(item.created_at)}
-                        </span>
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-border"></div>
+                  
+                  <div className="space-y-6">
+                    {tracking.map((item) => (
+                      <div key={item.id} className="relative flex items-start gap-4">
+                        {/* Timeline dot */}
+                        <div className="relative flex-shrink-0">
+                          <div className="w-3 h-3 bg-primary rounded-full border-2 border-background shadow-sm"></div>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 pb-4">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {getStatusBadge(item.status)}
+                                <span className="text-sm text-muted-foreground">
+                                  por {item.updated_by_name}
+                                </span>
+                              </div>
+                              
+                              {item.message && (
+                                <div className="bg-muted/50 rounded-lg p-3">
+                                  <p className="text-sm">{item.message}</p>
+                                </div>
+                              )}
+                              
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(item.created_at)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      {item.message && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {item.message}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground">
-                        Atualizado por: {item.updated_by_name}
-                      </p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -507,6 +612,25 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="communication" className="space-y-6">
+          {socialRegistration ? (
+            <CommunicationPanel
+              socialRegistrationId={socialRegistration.id}
+              userProfile={userProfile}
+            />
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <MessageCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Comunicação não disponível</h3>
+                <p className="text-muted-foreground text-center">
+                  É necessário ter um cadastro social para utilizar o sistema de comunicação.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
