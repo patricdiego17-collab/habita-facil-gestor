@@ -123,6 +123,39 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_internal: boolean
+          message: string
+          message_type: string
+          social_registration_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          message: string
+          message_type?: string
+          social_registration_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          message?: string
+          message_type?: string
+          social_registration_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -319,6 +352,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_tracking_entry: {
+        Args: {
+          p_user_id: string
+          p_social_registration_id: string
+          p_status: string
+          p_message?: string
+          p_updated_by?: string
+        }
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
