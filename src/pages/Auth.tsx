@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import itapecericaLogo from "@/assets/itapecerica-logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -30,19 +29,14 @@ const Auth = () => {
   const [userRole, setUserRole] = useState<'citizen' | 'social_worker' | 'admin'>('citizen');
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate("/");
       }
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/");
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    };
+    checkUser();
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -138,7 +132,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src={itapecericaLogo} 
+              src="/src/assets/itapecerica-logo.png" 
               alt="Itapecerica da Serra" 
               className="h-16 w-auto"
             />

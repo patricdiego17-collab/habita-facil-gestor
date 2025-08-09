@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
@@ -13,7 +13,6 @@ import { MyDataPage } from "@/components/MyDataPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import itapecericaLogo from "@/assets/itapecerica-logo.png";
 
 interface UserProfile {
   id: string;
@@ -136,14 +135,10 @@ const Index = () => {
     try {
       await supabase.auth.signOut();
       toast.success('Logout realizado com sucesso!');
+      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Erro ao fazer logout');
-    } finally {
-      setSession(null);
-      setUser(null);
-      setUserProfile(null);
-      navigate('/auth');
     }
   };
 
@@ -268,7 +263,7 @@ const Index = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src={itapecericaLogo} 
+                src="/src/assets/itapecerica-logo.png" 
                 alt="Itapecerica da Serra" 
                 className="h-16 w-auto"
               />
@@ -286,7 +281,8 @@ const Index = () => {
 
   // Redirect to auth if not logged in
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    navigate('/auth');
+    return null;
   }
 
   // Show loading if user exists but profile is still loading
@@ -297,7 +293,7 @@ const Index = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src={itapecericaLogo} 
+                src="/src/assets/itapecerica-logo.png" 
                 alt="Itapecerica da Serra" 
                 className="h-16 w-auto"
               />
