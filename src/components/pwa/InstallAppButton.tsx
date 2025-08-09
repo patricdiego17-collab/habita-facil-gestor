@@ -123,7 +123,7 @@ const InstallAppButton: React.FC<InstallAppButtonProps> = ({ label = "Instalar a
 
 export const InstallAppFAB: React.FC = () => {
   return (
-    <div className="fixed bottom-4 right-4 z-[60] md:hidden">
+    <div className="fixed bottom-4 right-4 z-[60]">
       <InstallAppButton size="lg" label="Instalar app" />
     </div>
   );
