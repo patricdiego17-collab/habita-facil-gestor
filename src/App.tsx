@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import InstallPrompt from "./components/pwa/InstallPrompt";
+import { InstallAppFAB } from "./components/pwa/InstallAppButton";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
       <InstallPrompt />
+      <InstallAppFAB />
     </TooltipProvider>
   </QueryClientProvider>
 );

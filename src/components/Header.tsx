@@ -4,6 +4,7 @@ import { LogOut, User, Menu } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import itapecericaLogo from "@/assets/itapecerica-logo.png";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
+import InstallAppButton from "@/components/pwa/InstallAppButton";
 
 interface HeaderProps {
   userRole?: 'admin' | 'social_worker' | 'citizen';
@@ -57,7 +58,7 @@ export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout, 
                     <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('new-registration')}>Novo Cadastro</Button>
                   )}
                   <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('my-data')}>Meus Dados</Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={() => (window as any).triggerPwaInstall?.() || alert('Se o botão não abrir, use Chrome/Edge e aguarde o aviso de instalação, ou no iOS use \"Adicionar à Tela de Início\" no Safari.')}>Instalar app</Button>
+                  <InstallAppButton variant="outline" className="w-full justify-start" />
                   <Button variant="destructive" className="w-full justify-start" onClick={onLogout}>Sair</Button>
                   <DrawerClose asChild>
                     <div />
