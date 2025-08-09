@@ -39,9 +39,31 @@ export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout, 
                 Prefeitura Municipal de Itapecerica da Serra
               </p>
             </div>
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
+            <Drawer>
+              <DrawerTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent>
+                <DrawerHeader>
+                  <DrawerTitle>Navegação</DrawerTitle>
+                </DrawerHeader>
+                <nav className="px-4 pb-4 space-y-2">
+                  <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('dashboard')}>Início</Button>
+                  {userRole !== 'citizen' ? (
+                    <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('social-registration')}>Novo Cadastro</Button>
+                  ) : (
+                    <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('new-registration')}>Novo Cadastro</Button>
+                  )}
+                  <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('my-data')}>Meus Dados</Button>
+                  <Button variant="destructive" className="w-full justify-start" onClick={onLogout}>Sair</Button>
+                  <DrawerClose asChild>
+                    <div />
+                  </DrawerClose>
+                </nav>
+              </DrawerContent>
+            </Drawer>
           </div>
 
           {/* User Menu */}
