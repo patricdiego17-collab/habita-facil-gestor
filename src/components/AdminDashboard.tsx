@@ -23,6 +23,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RegistrationHistory from './registration/RegistrationHistory';
+import RegistrationMessages from './registration/RegistrationMessages';
 
 interface UserProfile {
   id: string;
@@ -248,7 +251,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
     if (!selectedRegistration || !statusUpdate) return;
 
     try {
-      // Update registration status
       const { error: updateError } = await supabase
         .from('social_registrations')
         .update({ 
@@ -259,13 +261,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
 
       if (updateError) throw updateError;
 
-      // Add tracking entry
       const { error: trackingError } = await supabase
         .from('registration_tracking')
         .insert({
           social_registration_id: selectedRegistration.id,
           user_id: selectedRegistration.user_id,
-          updated_by: userProfile.id,
+          updated_by: userProfile.user_id,
           status: statusUpdate,
           message: message || null
         });
@@ -446,61 +447,85 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
                             Gerenciar
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md">
+                        <DialogContent className="max-w-2xl">
                           <DialogHeader>
                             <DialogTitle>Gerenciar Cadastro</DialogTitle>
                             <DialogDescription>
-                              Atualize o status e adicione comentários para {registration.name}
+                              {registration.name} — aprove, edite, consulte histórico e envie mensagens
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">Status</label>
-                              <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pending">Pendente</SelectItem>
-                                  <SelectItem value="in_review">Em Análise</SelectItem>
-                                  <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                  <SelectItem value="approved">Aprovado</SelectItem>
-                                  <SelectItem value="rejected">Rejeitado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
 
-                            <div>
-                              <label className="text-sm font-medium">Assistente Social</label>
-                              <Select value={assignedWorker} onValueChange={setAssignedWorker}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione um assistente social" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="">Nenhum</SelectItem>
-                                  {socialWorkers.map((worker) => (
-                                    <SelectItem key={worker.id} value={worker.id}>
-                                      {worker.full_name || worker.email}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <Tabs defaultValue="atualizar" className="w-full">
+                            <TabsList>
+                              <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                              <TabsTrigger value="historico">Histórico</TabsTrigger>
+                              <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                            </TabsList>
 
-                            <div>
-                              <label className="text-sm font-medium">Comentário</label>
-                              <Textarea
-                                placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                              />
-                            </div>
+                            <TabsContent value="atualizar" className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Status</label>
+                                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                    <SelectItem value="in_review">Em Análise</SelectItem>
+                                    <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                    <SelectItem value="approved">Aprovado</SelectItem>
+                                    <SelectItem value="rejected">Rejeitado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
 
-                            <Button onClick={updateRegistrationStatus} className="w-full">
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Atualizar
-                            </Button>
-                          </div>
+                              <div>
+                                <label className="text-sm font-medium">Assistente Social</label>
+                                <Select value={assignedWorker} onValueChange={setAssignedWorker}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione um assistente social" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="">Nenhum</SelectItem>
+                                    {socialWorkers.map((worker) => (
+                                      <SelectItem key={worker.id} value={worker.id}>
+                                        {worker.full_name || worker.email}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <label className="text-sm font-medium">Comentário</label>
+                                <Textarea
+                                  placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                  value={message}
+                                  onChange={(e) => setMessage(e.target.value)}
+                                />
+                              </div>
+
+                              <Button onClick={updateRegistrationStatus} className="w-full">
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Atualizar
+                              </Button>
+                            </TabsContent>
+
+                            <TabsContent value="historico">
+                              {selectedRegistration && (
+                                <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
+                              )}
+                            </TabsContent>
+
+                            <TabsContent value="mensagens">
+                              {selectedRegistration && (
+                                <RegistrationMessages
+                                  socialRegistrationId={selectedRegistration.id}
+                                  currentUserId={userProfile.user_id}
+                                />
+                              )}
+                            </TabsContent>
+                          </Tabs>
                         </DialogContent>
                       </Dialog>
 
@@ -616,7 +641,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
         </CardContent>
       </Card>
 
-      {/* Novo: Gestão de Assistentes Sociais */}
+      {/* Gestão de Assistentes Sociais */}
       <SocialWorkersManager />
     </div>
   );

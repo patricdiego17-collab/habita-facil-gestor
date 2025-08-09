@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +20,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import RegistrationHistory from './registration/RegistrationHistory';
+import RegistrationMessages from './registration/RegistrationMessages';
 
 interface UserProfile {
   id: string;
@@ -137,7 +139,6 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     if (!selectedRegistration || !statusUpdate) return;
 
     try {
-      // Update registration status
       const { error: updateError } = await supabase
         .from('social_registrations')
         .update({ status: statusUpdate })
@@ -145,13 +146,12 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
 
       if (updateError) throw updateError;
 
-      // Add tracking entry
       const { error: trackingError } = await supabase
         .from('registration_tracking')
         .insert({
           social_registration_id: selectedRegistration.id,
           user_id: selectedRegistration.user_id,
-          updated_by: userProfile.id,
+          updated_by: userProfile.user_id,
           status: statusUpdate,
           message: message || null
         });
@@ -327,47 +327,71 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                               }}
                             >
                               <Edit className="h-4 w-4 mr-2" />
-                              Atualizar
+                              Gerenciar
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-md">
+                          <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Atualizar Status</DialogTitle>
+                              <DialogTitle>Gerenciar Cadastro</DialogTitle>
                               <DialogDescription>
-                                Atualize o status e adicione comentários para {registration.name}
+                                {registration.name} — aprove, edite, consulte histórico e envie mensagens
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <label className="text-sm font-medium">Novo Status</label>
-                                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pendente</SelectItem>
-                                    <SelectItem value="in_review">Em Análise</SelectItem>
-                                    <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                    <SelectItem value="approved">Aprovado</SelectItem>
-                                    <SelectItem value="rejected">Rejeitado</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
 
-                              <div>
-                                <label className="text-sm font-medium">Comentário</label>
-                                <Textarea
-                                  placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                                  value={message}
-                                  onChange={(e) => setMessage(e.target.value)}
-                                />
-                              </div>
+                            <Tabs defaultValue="atualizar" className="w-full">
+                              <TabsList>
+                                <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                                <TabsTrigger value="historico">Histórico</TabsTrigger>
+                                <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                              </TabsList>
 
-                              <Button onClick={updateRegistrationStatus} className="w-full">
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                Atualizar Status
-                              </Button>
-                            </div>
+                              <TabsContent value="atualizar" className="space-y-4">
+                                <div>
+                                  <label className="text-sm font-medium">Novo Status</label>
+                                  <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pendente</SelectItem>
+                                      <SelectItem value="in_review">Em Análise</SelectItem>
+                                      <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                      <SelectItem value="approved">Aprovado</SelectItem>
+                                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div>
+                                  <label className="text-sm font-medium">Comentário</label>
+                                  <Textarea
+                                    placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                  />
+                                </div>
+
+                                <Button onClick={updateRegistrationStatus} className="w-full">
+                                  <MessageCircle className="h-4 w-4 mr-2" />
+                                  Atualizar
+                                </Button>
+                              </TabsContent>
+
+                              <TabsContent value="historico">
+                                {selectedRegistration && (
+                                  <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
+                                )}
+                              </TabsContent>
+
+                              <TabsContent value="mensagens">
+                                {selectedRegistration && (
+                                  <RegistrationMessages
+                                    socialRegistrationId={selectedRegistration.id}
+                                    currentUserId={userProfile.user_id}
+                                  />
+                                )}
+                              </TabsContent>
+                            </Tabs>
                           </DialogContent>
                         </Dialog>
 
@@ -410,7 +434,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
         </CardContent>
       </Card>
 
-      {/* All Registrations Overview - exibir todos */}
+      {/* All Registrations Overview - agora com ações */}
       <Card>
         <CardHeader>
           <CardTitle>Visão Geral - Todos os Cadastros</CardTitle>
@@ -426,6 +450,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                 <TableHead>CPF</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data de Cadastro</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -435,6 +460,111 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                   <TableCell>{registration.cpf}</TableCell>
                   <TableCell>{getStatusBadge(registration.status)}</TableCell>
                   <TableCell>{formatDate(registration.created_at)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRegistration(registration);
+                              setStatusUpdate(registration.status);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Gerenciar
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Gerenciar Cadastro</DialogTitle>
+                            <DialogDescription>
+                              {registration.name} — aprove, edite, consulte histórico e envie mensagens
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          <Tabs defaultValue="atualizar" className="w-full">
+                            <TabsList>
+                              <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                              <TabsTrigger value="historico">Histórico</TabsTrigger>
+                              <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="atualizar" className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Novo Status</label>
+                                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                    <SelectItem value="in_review">Em Análise</SelectItem>
+                                    <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                    <SelectItem value="approved">Aprovado</SelectItem>
+                                    <SelectItem value="rejected">Rejeitado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <label className="text-sm font-medium">Comentário</label>
+                                <Textarea
+                                  placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                  value={message}
+                                  onChange={(e) => setMessage(e.target.value)}
+                                />
+                              </div>
+
+                              <Button onClick={updateRegistrationStatus} className="w-full">
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Atualizar
+                              </Button>
+                            </TabsContent>
+
+                            <TabsContent value="historico">
+                              {selectedRegistration && (
+                                <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
+                              )}
+                            </TabsContent>
+
+                            <TabsContent value="mensagens">
+                              {selectedRegistration && (
+                                <RegistrationMessages
+                                  socialRegistrationId={selectedRegistration.id}
+                                  currentUserId={userProfile.user_id}
+                                />
+                              )}
+                            </TabsContent>
+                          </Tabs>
+                        </DialogContent>
+                      </Dialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação é irreversível. Tem certeza que deseja excluir o cadastro de {registration.name}?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteRegistration(registration.id)}>
+                              Confirmar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
