@@ -457,7 +457,7 @@ const handleFilesSelected = async (
             Cadastros atribuídos a você para acompanhamento
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           {assignedRegistrations.length > 0 ? (
             <Table>
               <TableHeader>
@@ -523,7 +523,7 @@ const handleFilesSelected = async (
                             </DialogHeader>
 
                               <Tabs defaultValue="atualizar" className="w-full">
-                                <TabsList>
+                                <TabsList className="w-full overflow-x-auto whitespace-nowrap">
                                   <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
                                   <TabsTrigger value="historico">Histórico</TabsTrigger>
                                   <TabsTrigger value="documentos">Documentos</TabsTrigger>
@@ -677,7 +677,7 @@ const handleFilesSelected = async (
             Visualização geral de todos os cadastros do sistema
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -740,12 +740,12 @@ const handleFilesSelected = async (
                           </DialogHeader>
 
                             <Tabs defaultValue="atualizar" className="w-full">
-                              <TabsList>
-                                <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
-                                <TabsTrigger value="historico">Histórico</TabsTrigger>
-                                <TabsTrigger value="documentos">Documentos</TabsTrigger>
-                                <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-                              </TabsList>
+                             <TabsList className="w-full overflow-x-auto whitespace-nowrap">
+                               <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                               <TabsTrigger value="historico">Histórico</TabsTrigger>
+                               <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                               <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                             </TabsList>
 
                               <TabsContent value="atualizar" className="space-y-4">
                                 <div>
