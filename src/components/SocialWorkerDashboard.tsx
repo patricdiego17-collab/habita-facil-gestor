@@ -69,39 +69,76 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
 
   const loadData = async () => {
     try {
-      // Carrega casos atribuídos (sem embed) e mapeia e-mails
+      // Carrega casos atribuídos e também os aprovados por este assistente (união)
+      // 1) Atribuídos diretamente
       const { data: assignedData, error: assignedError } = await supabase
         .from('social_registrations')
         .select('*')
         .eq('assigned_social_worker_id', userProfile.id)
         .order('created_at', { ascending: false });
 
+      const assigned = assignedData || [];
       if (assignedError) {
         console.error('Error loading assigned registrations:', assignedError);
-        setAssignedRegistrations([]);
-      } else {
-        const assigned = assignedData || [];
-        const assignedUserIds = Array.from(new Set(assigned.map((r: any) => r.user_id).filter(Boolean)));
-        let emailMap: Record<string, string | null> = {};
-        if (assignedUserIds.length > 0) {
-          const { data: profsA, error: profErrA } = await supabase
-            .from('profiles')
-            .select('user_id, email')
-            .in('user_id', assignedUserIds);
-          if (profErrA) {
-            console.error('Error loading emails for assigned registrations:', profErrA);
-          } else {
-            (profsA || []).forEach((p: any) => {
-              emailMap[p.user_id as string] = (p as any).email ?? null;
-            });
-          }
-        }
-        const formattedAssigned = assigned.map((reg: any) => ({
-          ...reg,
-          email: emailMap[reg.user_id] || 'N/A',
-        }));
-        setAssignedRegistrations(formattedAssigned);
       }
+
+      // 2) Aprovados por este assistente (via histórico)
+      const { data: approvalsRt, error: approvalsRtErr } = await supabase
+        .from('registration_tracking')
+        .select('social_registration_id')
+        .eq('status', 'approved')
+        .eq('updated_by', userProfile.user_id);
+
+      if (approvalsRtErr) {
+        console.error('Error loading approvals from tracking:', approvalsRtErr);
+      }
+
+      let approvedRegs: any[] = [];
+      const approvedIds: string[] = Array.from(
+        new Set(((approvalsRt || []) as any[]).map((r: any) => r.social_registration_id as string).filter(Boolean))
+      ) as string[];
+      if (approvedIds.length > 0) {
+        const { data: approvalsRegsData, error: approvalsRegsErr } = await supabase
+          .from('social_registrations')
+          .select('*')
+          .in('id', approvedIds);
+        if (approvalsRegsErr) {
+          console.error('Error loading approved registrations:', approvalsRegsErr);
+        } else {
+          approvedRegs = approvalsRegsData || [];
+        }
+      }
+
+      // 3) União sem duplicados
+      const merged = [...assigned, ...approvedRegs].reduce((acc: any[], reg: any) => {
+        if (!acc.some((r: any) => r.id === reg.id)) acc.push(reg);
+        return acc;
+      }, [] as any[]);
+
+      // 4) Mapear e-mails para a união
+      const unionUserIds: string[] = Array.from(
+        new Set(merged.map((r: any) => r.user_id as string).filter(Boolean))
+      ) as string[];
+      let emailMap: Record<string, string | null> = {};
+      if (unionUserIds.length > 0) {
+        const { data: profs, error: profErr } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .in('user_id', unionUserIds);
+        if (profErr) {
+          console.error('Error loading emails for assigned/approved registrations:', profErr);
+        } else {
+          (profs || []).forEach((p: any) => {
+            emailMap[p.user_id as string] = (p as any).email ?? null;
+          });
+        }
+      }
+
+      const formattedAssigned = merged.map((reg: any) => ({
+        ...reg,
+        email: emailMap[reg.user_id] || 'N/A',
+      }));
+      setAssignedRegistrations(formattedAssigned);
 
       // Carrega todos os cadastros (sem embed) e mapeia e-mails
       const { data: allData, error: allError } = await supabase
@@ -146,9 +183,15 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     if (!selectedRegistration || !statusUpdate) return;
 
     try {
+      const updates: any = { status: statusUpdate };
+      if (statusUpdate === 'approved') {
+        // Ao aprovar, atribui automaticamente o caso a este assistente social
+        updates.assigned_social_worker_id = userProfile.id;
+      }
+
       const { error: updateError } = await supabase
         .from('social_registrations')
-        .update({ status: statusUpdate })
+        .update(updates)
         .eq('id', selectedRegistration.id);
 
       if (updateError) throw updateError;
