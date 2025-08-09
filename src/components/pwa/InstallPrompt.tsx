@@ -2,10 +2,12 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { X, Download } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 const isIos = () => typeof window !== 'undefined' && /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
 function InstallPrompt() {
+  const location = useLocation();
   const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
   const [visible, setVisible] = React.useState(false);
   const [isStandalone, setIsStandalone] = React.useState(false);
@@ -41,6 +43,7 @@ function InstallPrompt() {
     };
   }, []);
 
+  if (location.pathname === '/auth') return null;
   if (isStandalone) return null; // already installed
   if (!visible && !isIos()) return null;
 

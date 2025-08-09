@@ -94,7 +94,7 @@ const InstallAppButton: React.FC<InstallAppButtonProps> = ({ label = "Instalar a
     toast.info("Instalação ainda não disponível. Continue navegando e tente novamente.");
   };
 
-  const show = isIos() || installable; // iOS sempre mostra (apenas instruções)
+  const show = true; // Sempre exibir o botão; mostra instruções se o prompt não estiver disponível
 
   if (!show) return null;
 
