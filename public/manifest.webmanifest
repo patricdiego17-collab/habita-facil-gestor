@@ -2,6 +2,7 @@
   "name": "HabitaFácil",
   "short_name": "HabitaFácil",
   "description": "Sistema de Cadastro Social e Habitacional da Prefeitura Municipal de Itapecerica da Serra",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,14 +11,16 @@
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/src/assets/itapecerica-logo.png",
+      "src": "/icons/icon-512.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/src/assets/itapecerica-logo.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

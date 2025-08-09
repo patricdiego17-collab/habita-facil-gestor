@@ -19,10 +19,22 @@ function InstallPrompt() {
     const beforeInstallHandler = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
+      (window as any).__deferredPrompt = e;
+      (window as any).triggerPwaInstall = async () => {
+        setVisible(true);
+        if ((window as any).__deferredPrompt) {
+          (window as any).__deferredPrompt.prompt();
+        }
+      };
       setVisible(true);
     };
 
     window.addEventListener('beforeinstallprompt', beforeInstallHandler as any);
+    window.addEventListener('appinstalled', () => {
+      setVisible(false);
+      setDeferredPrompt(null);
+      (window as any).__deferredPrompt = null;
+    });
 
     return () => {
       window.removeEventListener('beforeinstallprompt', beforeInstallHandler as any);
@@ -33,15 +45,15 @@ function InstallPrompt() {
   if (!visible && !isIos()) return null;
 
   const onInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
+    const dp = deferredPrompt || (window as any).__deferredPrompt;
+    if (!dp) return;
     try {
-      await deferredPrompt.userChoice;
-    } catch (e) {
-      // ignore
-    }
+      await dp.prompt();
+      await dp.userChoice;
+    } catch {}
     setVisible(false);
     setDeferredPrompt(null);
+    (window as any).__deferredPrompt = null;
   };
 
   return (

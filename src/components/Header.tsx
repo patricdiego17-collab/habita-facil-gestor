@@ -57,6 +57,7 @@ export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout, 
                     <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('new-registration')}>Novo Cadastro</Button>
                   )}
                   <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('my-data')}>Meus Dados</Button>
+                  <Button variant="outline" className="w-full justify-start" onClick={() => (window as any).triggerPwaInstall?.() || alert('Se o botão não abrir, use Chrome/Edge e aguarde o aviso de instalação, ou no iOS use \"Adicionar à Tela de Início\" no Safari.')}>Instalar app</Button>
                   <Button variant="destructive" className="w-full justify-start" onClick={onLogout}>Sair</Button>
                   <DrawerClose asChild>
                     <div />
