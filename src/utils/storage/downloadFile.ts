@@ -19,6 +19,25 @@ export async function downloadDocument(filePath: string, filename?: string) {
     throw new Error("Não foi possível gerar o link de download.");
   }
 
-  // Abre em nova aba (navegador fará o download com o nome sugerido)
-  window.open(data.signedUrl, "_blank");
+  // Faz download via Blob para evitar bloqueio de pop-up e garantir nome do arquivo
+  try {
+    const res = await fetch(data.signedUrl);
+    if (!res.ok) {
+      console.error("[downloadDocument] fetch failed status:", res.status);
+      throw new Error("Falha ao baixar o arquivo");
+    }
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename || filePath.split('/').pop() || 'documento';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(objectUrl);
+  } catch (err) {
+    console.error("[downloadDocument] blob download error, opening fallback:", err);
+    // Fallback para abrir em nova aba caso o fetch falhe
+    window.open(data.signedUrl, "_blank");
+  }
 }

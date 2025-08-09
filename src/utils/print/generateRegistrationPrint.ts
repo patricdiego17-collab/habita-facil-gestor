@@ -302,17 +302,29 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
 </html>
   `;
 
-  const printWindow = window.open("", "_blank", "noopener,noreferrer");
-  if (!printWindow) throw new Error("Pop-up bloqueado pelo navegador. Permita pop-ups para imprimir.");
+  // Renderiza em um iframe oculto para evitar bloqueio de pop-up e telas em branco
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.focus();
-  // Usuário pode clicar no botão "Imprimir" da página; também podemos disparar automaticamente:
-  try {
-    printWindow.print();
-  } catch (e) {
-    console.warn("[generateRegistrationPrint] print() falhou, usuário pode usar o botão na página.");
-  }
+  const onLoad = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (e) {
+      console.warn('[generateRegistrationPrint] iframe print() falhou, usuário pode usar o botão na página.');
+    } finally {
+      setTimeout(() => {
+        iframe.remove();
+      }, 2000);
+    }
+  };
+
+  iframe.onload = onLoad;
+  (iframe as any).srcdoc = html;
 }
