@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RegistrationHistory from './registration/RegistrationHistory';
 import RegistrationMessages from './registration/RegistrationMessages';
+import RegistrationDocuments from './registration/RegistrationDocuments';
 import { generateRegistrationPrint } from '@/utils/print/generateRegistrationPrint';
 
 interface UserProfile {
@@ -363,60 +364,69 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                               </div>
                             </DialogHeader>
 
-                            <Tabs defaultValue="atualizar" className="w-full">
-                              <TabsList>
-                                <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
-                                <TabsTrigger value="historico">Histórico</TabsTrigger>
-                                <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-                              </TabsList>
+                              <Tabs defaultValue="atualizar" className="w-full">
+                                <TabsList>
+                                  <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                                  <TabsTrigger value="historico">Histórico</TabsTrigger>
+                                  <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                                  <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                                </TabsList>
 
-                              <TabsContent value="atualizar" className="space-y-4">
-                                <div>
-                                  <label className="text-sm font-medium">Novo Status</label>
-                                  <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Selecione o status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pendente</SelectItem>
-                                      <SelectItem value="in_review">Em Análise</SelectItem>
-                                      <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                      <SelectItem value="approved">Aprovado</SelectItem>
-                                      <SelectItem value="rejected">Rejeitado</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                                <TabsContent value="atualizar" className="space-y-4">
+                                  <div>
+                                    <label className="text-sm font-medium">Novo Status</label>
+                                    <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o status" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pending">Pendente</SelectItem>
+                                        <SelectItem value="in_review">Em Análise</SelectItem>
+                                        <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                        <SelectItem value="approved">Aprovado</SelectItem>
+                                        <SelectItem value="rejected">Rejeitado</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
 
-                                <div>
-                                  <label className="text-sm font-medium">Comentário</label>
-                                  <Textarea
-                                    placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                  />
-                                </div>
+                                  <div>
+                                    <label className="text-sm font-medium">Comentário</label>
+                                    <Textarea
+                                      placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                      value={message}
+                                      onChange={(e) => setMessage(e.target.value)}
+                                    />
+                                  </div>
 
-                                <Button onClick={updateRegistrationStatus} className="w-full">
-                                  <MessageCircle className="h-4 w-4 mr-2" />
-                                  Atualizar
-                                </Button>
-                              </TabsContent>
+                                  <Button onClick={updateRegistrationStatus} className="w-full">
+                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                    Atualizar
+                                  </Button>
+                                </TabsContent>
 
-                              <TabsContent value="historico">
-                                {selectedRegistration && (
-                                  <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
-                                )}
-                              </TabsContent>
+                                <TabsContent value="historico">
+                                  {selectedRegistration && (
+                                    <div className="max-h-[60vh] overflow-auto pr-1">
+                                      <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
+                                    </div>
+                                  )}
+                                </TabsContent>
 
-                              <TabsContent value="mensagens">
-                                {selectedRegistration && (
-                                  <RegistrationMessages
-                                    socialRegistrationId={selectedRegistration.id}
-                                    currentUserId={userProfile.user_id}
-                                  />
-                                )}
-                              </TabsContent>
-                            </Tabs>
+                                <TabsContent value="documentos">
+                                  {selectedRegistration && (
+                                    <RegistrationDocuments socialRegistrationId={selectedRegistration.id} />
+                                  )}
+                                </TabsContent>
+
+                                <TabsContent value="mensagens">
+                                  {selectedRegistration && (
+                                    <RegistrationMessages
+                                      socialRegistrationId={selectedRegistration.id}
+                                      currentUserId={userProfile.user_id}
+                                    />
+                                  )}
+                                </TabsContent>
+                              </Tabs>
                           </DialogContent>
                         </Dialog>
 
@@ -520,60 +530,69 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                             </div>
                           </DialogHeader>
 
-                          <Tabs defaultValue="atualizar" className="w-full">
-                            <TabsList>
-                              <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
-                              <TabsTrigger value="historico">Histórico</TabsTrigger>
-                              <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
-                            </TabsList>
+                            <Tabs defaultValue="atualizar" className="w-full">
+                              <TabsList>
+                                <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
+                                <TabsTrigger value="historico">Histórico</TabsTrigger>
+                                <TabsTrigger value="documentos">Documentos</TabsTrigger>
+                                <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
+                              </TabsList>
 
-                            <TabsContent value="atualizar" className="space-y-4">
-                              <div>
-                                <label className="text-sm font-medium">Novo Status</label>
-                                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione o status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pendente</SelectItem>
-                                    <SelectItem value="in_review">Em Análise</SelectItem>
-                                    <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                    <SelectItem value="approved">Aprovado</SelectItem>
-                                    <SelectItem value="rejected">Rejeitado</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                              <TabsContent value="atualizar" className="space-y-4">
+                                <div>
+                                  <label className="text-sm font-medium">Novo Status</label>
+                                  <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Selecione o status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pendente</SelectItem>
+                                      <SelectItem value="in_review">Em Análise</SelectItem>
+                                      <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                      <SelectItem value="approved">Aprovado</SelectItem>
+                                      <SelectItem value="rejected">Rejeitado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                              <div>
-                                <label className="text-sm font-medium">Comentário</label>
-                                <Textarea
-                                  placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                                  value={message}
-                                  onChange={(e) => setMessage(e.target.value)}
-                                />
-                              </div>
+                                <div>
+                                  <label className="text-sm font-medium">Comentário</label>
+                                  <Textarea
+                                    placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                  />
+                                </div>
 
-                              <Button onClick={updateRegistrationStatus} className="w-full">
-                                <MessageCircle className="h-4 w-4 mr-2" />
-                                Atualizar
-                              </Button>
-                            </TabsContent>
+                                <Button onClick={updateRegistrationStatus} className="w-full">
+                                  <MessageCircle className="h-4 w-4 mr-2" />
+                                  Atualizar
+                                </Button>
+                              </TabsContent>
 
-                            <TabsContent value="historico">
-                              {selectedRegistration && (
-                                <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
-                              )}
-                            </TabsContent>
+                              <TabsContent value="historico">
+                                {selectedRegistration && (
+                                  <div className="max-h-[60vh] overflow-auto pr-1">
+                                    <RegistrationHistory socialRegistrationId={selectedRegistration.id} />
+                                  </div>
+                                )}
+                              </TabsContent>
 
-                            <TabsContent value="mensagens">
-                              {selectedRegistration && (
-                                <RegistrationMessages
-                                  socialRegistrationId={selectedRegistration.id}
-                                  currentUserId={userProfile.user_id}
-                                />
-                              )}
-                            </TabsContent>
-                          </Tabs>
+                              <TabsContent value="documentos">
+                                {selectedRegistration && (
+                                  <RegistrationDocuments socialRegistrationId={selectedRegistration.id} />
+                                )}
+                              </TabsContent>
+
+                              <TabsContent value="mensagens">
+                                {selectedRegistration && (
+                                  <RegistrationMessages
+                                    socialRegistrationId={selectedRegistration.id}
+                                    currentUserId={userProfile.user_id}
+                                  />
+                                )}
+                              </TabsContent>
+                            </Tabs>
                         </DialogContent>
                       </Dialog>
 

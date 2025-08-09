@@ -47,10 +47,20 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>(initialFiles);
   const [selectedCategory, setSelectedCategory] = useState('rg');
 
-  const handleFileUpload = (files: FileList | null, category: string) => {
+  const handleFileUpload = async (files: FileList | null, category: string) => {
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Usuário não está logado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    for (const file of Array.from(files)) {
       // Validar tipo de arquivo
       const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
@@ -59,7 +69,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
           description: "Apenas imagens (JPG, PNG) e PDFs são aceitos.",
           variant: "destructive",
         });
-        return;
+        continue;
       }
 
       // Validar tamanho (5MB max)
@@ -69,48 +79,47 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
           description: "O arquivo deve ter no máximo 5MB.",
           variant: "destructive",
         });
-        return;
+        continue;
       }
 
+      const tempId = Date.now().toString() + Math.random().toString(36);
       const newFile: UploadedFile = {
-        id: Date.now().toString() + Math.random().toString(36),
+        id: tempId,
         name: file.name,
         type: file.type,
         size: file.size,
         category,
         status: 'uploading',
-        progress: 0
+        progress: 10,
       };
-
       setUploadedFiles(prev => [...prev, newFile]);
 
-      // Simular upload
-      simulateUpload(newFile.id);
-    });
+      try {
+        const path = `${user.id}/${Date.now()}_${file.name}`;
+        const { error: uploadErr } = await supabase.storage
+          .from('documents')
+          .upload(path, file, { contentType: file.type, upsert: true });
+
+        if (uploadErr) throw uploadErr;
+
+        setUploadedFiles(prev => prev.map(f => f.id === tempId ? {
+          ...f,
+          status: 'success',
+          progress: 100,
+          url: path,
+        } : f));
+      } catch (e) {
+        console.error('[DocumentUploadForm] upload error:', e);
+        setUploadedFiles(prev => prev.map(f => f.id === tempId ? { ...f, status: 'error' } : f));
+        toast({
+          title: "Erro de upload",
+          description: "Não foi possível enviar o arquivo.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const simulateUpload = (fileId: string) => {
-    const interval = setInterval(() => {
-      setUploadedFiles(prev => prev.map(file => {
-        if (file.id === fileId) {
-          const newProgress = Math.min(file.progress + Math.random() * 20, 100);
-          
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            return {
-              ...file,
-              progress: 100,
-              status: 'success',
-              url: `#uploaded-${fileId}`
-            };
-          }
-          
-          return { ...file, progress: newProgress };
-        }
-        return file;
-      }));
-    }, 200);
-  };
 
   const handleDeleteFile = (fileId: string) => {
     setUploadedFiles(prev => prev.filter(file => file.id !== fileId));
