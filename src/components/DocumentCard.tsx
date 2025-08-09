@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { downloadDocument } from "@/utils/storage/downloadFile";
 
 interface Document {
   id: string;
@@ -116,12 +118,20 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    if (document.file_path) {
-      // In a real implementation, this would download from Supabase Storage
+  const handleDownload = async () => {
+    if (!document.file_path) return;
+    try {
+      await downloadDocument(document.file_path, document.document_name || undefined);
       toast({
-        title: "Download",
-        description: "Funcionalidade de download em desenvolvimento.",
+        title: "Download iniciado",
+        description: "Seu arquivo está sendo baixado.",
+      });
+    } catch (e) {
+      console.error('[DocumentCard] download error:', e);
+      toast({
+        title: "Erro",
+        description: "Não foi possível baixar o arquivo.",
+        variant: "destructive",
       });
     }
   };

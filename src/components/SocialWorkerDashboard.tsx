@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2 } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RegistrationHistory from './registration/RegistrationHistory';
 import RegistrationMessages from './registration/RegistrationMessages';
+import { generateRegistrationPrint } from '@/utils/print/generateRegistrationPrint';
 
 interface UserProfile {
   id: string;
@@ -228,6 +229,19 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const handlePrint = async (registrationId: string) => {
+    try {
+      await generateRegistrationPrint(registrationId);
+    } catch (e) {
+      console.error('[SocialWorkerDashboard] print error:', e);
+      toast({
+        title: 'Erro ao imprimir',
+        description: 'Não foi possível gerar a página de impressão.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -336,6 +350,17 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                               <DialogDescription>
                                 {registration.name} — aprove, edite, consulte histórico e envie mensagens
                               </DialogDescription>
+                              <div className="mt-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePrint(registration.id)}
+                                  className="inline-flex items-center gap-2"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                  Imprimir cadastro
+                                </Button>
+                              </div>
                             </DialogHeader>
 
                             <Tabs defaultValue="atualizar" className="w-full">
@@ -434,7 +459,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
         </CardContent>
       </Card>
 
-      {/* All Registrations Overview - agora com ações */}
+      {/* All Registrations Overview */}
       <Card>
         <CardHeader>
           <CardTitle>Visão Geral - Todos os Cadastros</CardTitle>
@@ -482,6 +507,17 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                             <DialogDescription>
                               {registration.name} — aprove, edite, consulte histórico e envie mensagens
                             </DialogDescription>
+                            <div className="mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrint(registration.id)}
+                                className="inline-flex items-center gap-2"
+                              >
+                                <Printer className="h-4 w-4" />
+                                Imprimir cadastro
+                              </Button>
+                            </div>
                           </DialogHeader>
 
                           <Tabs defaultValue="atualizar" className="w-full">
