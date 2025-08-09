@@ -103,9 +103,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
       return;
     }
 
-    setRoleRequests(requests || []);
+    const normalized: RoleRequest[] = (requests || []).map((r: any) => ({
+      id: r.id as string,
+      requester_user_id: r.requester_user_id as string,
+      requested_role: (r.requested_role === 'admin' ? 'admin' : 'social_worker') as 'admin' | 'social_worker',
+      status: (r.status === 'approved' || r.status === 'rejected' ? r.status : 'pending') as 'pending' | 'approved' | 'rejected',
+      notes: r.notes ?? null,
+      reviewed_by: r.reviewed_by ?? null,
+      reviewed_at: r.reviewed_at ?? null,
+      created_at: r.created_at as string,
+      updated_at: r.updated_at as string,
+    }));
 
-    const ids = Array.from(new Set((requests || []).map(r => r.requester_user_id)));
+    setRoleRequests(normalized);
+
+    const ids = Array.from(new Set(normalized.map(r => r.requester_user_id)));
     if (ids.length > 0) {
       const { data: profs, error: profErr } = await supabase
         .from('profiles')
@@ -117,8 +129,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
         setRequesterInfo({});
       } else {
         const map: Record<string, { full_name: string | null; email: string | null }> = {};
-        (profs || []).forEach(p => {
-          map[p.user_id as string] = { full_name: (p as any).full_name ?? null, email: (p as any).email ?? null };
+        (profs || []).forEach((p: any) => {
+          map[p.user_id as string] = {
+            full_name: (p as any).full_name ?? null,
+            email: (p as any).email ?? null
+          };
         });
         setRequesterInfo(map);
       }
