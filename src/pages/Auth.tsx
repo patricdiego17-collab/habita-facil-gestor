@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import itapecericaLogo from "@/assets/itapecerica-logo.png";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -132,7 +133,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/src/assets/itapecerica-logo.png" 
+              src={itapecericaLogo} 
               alt="Itapecerica da Serra" 
               className="h-16 w-auto"
             />

@@ -13,6 +13,7 @@ import { MyDataPage } from "@/components/MyDataPage";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import itapecericaLogo from "@/assets/itapecerica-logo.png";
 
 interface UserProfile {
   id: string;
@@ -135,10 +136,14 @@ const Index = () => {
     try {
       await supabase.auth.signOut();
       toast.success('Logout realizado com sucesso!');
-      navigate('/auth');
     } catch (error) {
       console.error('Error signing out:', error);
       toast.error('Erro ao fazer logout');
+    } finally {
+      setSession(null);
+      setUser(null);
+      setUserProfile(null);
+      navigate('/auth');
     }
   };
 
@@ -263,7 +268,7 @@ const Index = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src="/src/assets/itapecerica-logo.png" 
+                src={itapecericaLogo} 
                 alt="Itapecerica da Serra" 
                 className="h-16 w-auto"
               />
@@ -293,7 +298,7 @@ const Index = () => {
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <img 
-                src="/src/assets/itapecerica-logo.png" 
+                src={itapecericaLogo} 
                 alt="Itapecerica da Serra" 
                 className="h-16 w-auto"
               />
