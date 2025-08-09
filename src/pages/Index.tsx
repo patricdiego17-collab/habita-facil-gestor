@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User as SupabaseUser, Session } from "@supabase/supabase-js";
@@ -286,8 +286,7 @@ const Index = () => {
 
   // Redirect to auth if not logged in
   if (!user) {
-    navigate('/auth');
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   // Show loading if user exists but profile is still loading
