@@ -4,7 +4,6 @@ import { LogOut, User, Menu } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import itapecericaLogo from "@/assets/itapecerica-logo.png";
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
-import InstallAppButton from "@/components/pwa/InstallAppButton";
 
 interface HeaderProps {
   userRole?: 'admin' | 'social_worker' | 'citizen';
@@ -40,32 +39,9 @@ export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout, 
                 Prefeitura Municipal de Itapecerica da Serra
               </p>
             </div>
-            <Drawer>
-              <DrawerTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent>
-                <DrawerHeader>
-                  <DrawerTitle>Navegação</DrawerTitle>
-                </DrawerHeader>
-                <nav className="px-4 pb-4 space-y-2">
-                  <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('dashboard')}>Início</Button>
-                  {userRole !== 'citizen' ? (
-                    <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('social-registration')}>Novo Cadastro</Button>
-                  ) : (
-                    <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('new-registration')}>Novo Cadastro</Button>
-                  )}
-                  <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('my-data')}>Meus Dados</Button>
-                  <InstallAppButton variant="outline" className="w-full justify-start" />
-                  <Button variant="destructive" className="w-full justify-start" onClick={onLogout}>Sair</Button>
-                  <DrawerClose asChild>
-                    <div />
-                  </DrawerClose>
-                </nav>
-              </DrawerContent>
-            </Drawer>
+            <Button variant="ghost" size="icon" className="md:hidden">
+              <Menu className="h-5 w-5" />
+            </Button>
           </div>
 
           {/* User Menu */}

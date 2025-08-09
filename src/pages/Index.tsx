@@ -314,8 +314,7 @@ const Index = () => {
       <Header 
         userRole={userProfile.role} 
         userName={userProfile.full_name} 
-        onLogout={handleLogout}
-        onNavigate={handleNavigate}
+        onLogout={handleLogout} 
       />
       {renderCurrentPage()}
     </div>

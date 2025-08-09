@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import InstallAppButton from "@/components/pwa/InstallAppButton";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -310,9 +309,6 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
-      <div className="mt-4 flex justify-center">
-        <InstallAppButton />
-      </div>
     </div>
   );
 };
