@@ -352,6 +352,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_set_user_role: {
+        Args: { p_user_id: string; p_role: string }
+        Returns: undefined
+      }
       create_tracking_entry: {
         Args: {
           p_user_id: string
