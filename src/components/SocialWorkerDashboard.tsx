@@ -178,6 +178,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Painel do Assistente Social</h1>
         <Button onClick={() => onNavigate('social-registration')}>
@@ -321,7 +322,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
         </CardContent>
       </Card>
 
-      {/* All Registrations Overview */}
+      {/* All Registrations Overview - exibir todos */}
       <Card>
         <CardHeader>
           <CardTitle>Visão Geral - Todos os Cadastros</CardTitle>
@@ -340,7 +341,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allRegistrations.slice(0, 10).map((registration) => (
+              {allRegistrations.map((registration) => (
                 <TableRow key={registration.id}>
                   <TableCell className="font-medium">{registration.name}</TableCell>
                   <TableCell>{registration.cpf}</TableCell>
@@ -350,11 +351,6 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
               ))}
             </TableBody>
           </Table>
-          {allRegistrations.length > 10 && (
-            <p className="text-sm text-muted-foreground mt-4 text-center">
-              Mostrando apenas os 10 registros mais recentes
-            </p>
-          )}
         </CardContent>
       </Card>
     </div>

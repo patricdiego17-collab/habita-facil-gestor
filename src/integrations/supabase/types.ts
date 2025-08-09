@@ -219,6 +219,42 @@ export type Database = {
         }
         Relationships: []
       }
+      role_requests: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          requested_role: string
+          requester_user_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_role: string
+          requester_user_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          requested_role?: string
+          requester_user_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       social_registrations: {
         Row: {
           address: string | null
@@ -356,6 +392,10 @@ export type Database = {
         Args: { p_user_id: string; p_role: string }
         Returns: undefined
       }
+      approve_role_request: {
+        Args: { p_request_id: string; p_approve: boolean; p_notes?: string }
+        Returns: undefined
+      }
       create_tracking_entry: {
         Args: {
           p_user_id: string
@@ -369,6 +409,14 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_super_admin_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_super_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

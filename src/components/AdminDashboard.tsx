@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Check, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,6 +41,18 @@ interface SocialWorker {
   email: string | null;
 }
 
+interface RoleRequest {
+  id: string;
+  requester_user_id: string;
+  requested_role: 'admin' | 'social_worker';
+  status: 'pending' | 'approved' | 'rejected';
+  notes?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate }) => {
   const [registrations, setRegistrations] = useState<SocialRegistration[]>([]);
   const [socialWorkers, setSocialWorkers] = useState<SocialWorker[]>([]);
@@ -51,9 +63,105 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  // --- Novos estados para solicitações de papel ---
+  const [roleRequests, setRoleRequests] = useState<RoleRequest[]>([]);
+  const [requesterInfo, setRequesterInfo] = useState<Record<string, { full_name: string | null; email: string | null }>>({});
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [loadingRequests, setLoadingRequests] = useState(true);
+
   useEffect(() => {
     loadData();
+    loadRoleRequests();
+    loadSuperAdminInfo();
   }, []);
+
+  const loadSuperAdminInfo = async () => {
+    console.log('[AdminDashboard] Checking super admin...');
+    const { data, error } = await supabase.rpc('get_super_admin_user_id');
+    if (error) {
+      console.error('Error loading super admin id:', error);
+      setIsSuperAdmin(false);
+      return;
+    }
+    setIsSuperAdmin(data === userProfile.user_id);
+    console.log('[AdminDashboard] isSuperAdmin:', data === userProfile.user_id);
+  };
+
+  const loadRoleRequests = async () => {
+    setLoadingRequests(true);
+    console.log('[AdminDashboard] Loading role requests...');
+    const { data: requests, error } = await supabase
+      .from('role_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading role requests:', error);
+      setRoleRequests([]);
+      setRequesterInfo({});
+      setLoadingRequests(false);
+      return;
+    }
+
+    setRoleRequests(requests || []);
+
+    const ids = Array.from(new Set((requests || []).map(r => r.requester_user_id)));
+    if (ids.length > 0) {
+      const { data: profs, error: profErr } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, email')
+        .in('user_id', ids);
+
+      if (profErr) {
+        console.error('Error loading requester profiles:', profErr);
+        setRequesterInfo({});
+      } else {
+        const map: Record<string, { full_name: string | null; email: string | null }> = {};
+        (profs || []).forEach(p => {
+          map[p.user_id as string] = { full_name: (p as any).full_name ?? null, email: (p as any).email ?? null };
+        });
+        setRequesterInfo(map);
+      }
+    } else {
+      setRequesterInfo({});
+    }
+
+    setLoadingRequests(false);
+  };
+
+  const approveOrRejectRequest = async (requestId: string, approve: boolean) => {
+    if (!isSuperAdmin) {
+      toast({
+        title: 'Permissão negada',
+        description: 'Apenas o primeiro administrador pode aprovar ou rejeitar solicitações.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('[AdminDashboard] Approving/Rejecting request:', requestId, approve);
+    const { error } = await supabase.rpc('approve_role_request', {
+      p_request_id: requestId,
+      p_approve: approve,
+      p_notes: null,
+    });
+
+    if (error) {
+      console.error('Error updating role request:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível processar a solicitação.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: approve ? 'Solicitação aprovada' : 'Solicitação rejeitada',
+      description: 'A solicitação foi processada com sucesso.',
+    });
+    loadRoleRequests();
+  };
 
   const loadData = async () => {
     try {
@@ -183,6 +291,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Painel Administrativo</h1>
         <Button onClick={() => onNavigate('social-registration')}>
@@ -332,6 +441,87 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Role Requests Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Solicitações de Função</CardTitle>
+          <CardDescription>
+            {isSuperAdmin
+              ? 'Aprovar ou rejeitar pedidos de promoção para Administrador ou Assistente Social.'
+              : 'Você pode visualizar todas as solicitações. Apenas o primeiro administrador pode aprovar/rejeitar.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingRequests ? (
+            <div className="text-sm text-muted-foreground">Carregando solicitações...</div>
+          ) : roleRequests.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Nenhuma solicitação encontrada.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Solicitante</TableHead>
+                  <TableHead>Pedido</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Criada em</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {roleRequests.map((req) => {
+                  const info = requesterInfo[req.requester_user_id] || { full_name: null, email: null };
+                  return (
+                    <TableRow key={req.id}>
+                      <TableCell className="font-medium">
+                        {info.full_name || info.email || req.requester_user_id}
+                        <div className="text-xs text-muted-foreground">{info.email}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {req.requested_role === 'admin' ? 'Administrador' : 'Assistente Social'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {req.status === 'pending' && <Badge className="bg-yellow-100 text-yellow-800">Pendente</Badge>}
+                        {req.status === 'approved' && <Badge className="bg-green-100 text-green-800">Aprovada</Badge>}
+                        {req.status === 'rejected' && <Badge className="bg-red-100 text-red-800">Rejeitada</Badge>}
+                      </TableCell>
+                      <TableCell>{formatDate(req.created_at)}</TableCell>
+                      <TableCell className="text-right">
+                        {req.status === 'pending' ? (
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={!isSuperAdmin}
+                              onClick={() => approveOrRejectRequest(req.id, true)}
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              Aprovar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={!isSuperAdmin}
+                              onClick={() => approveOrRejectRequest(req.id, false)}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Rejeitar
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Sem ações</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
