@@ -16,7 +16,7 @@ function escapeHtml(str?: string | null) {
     .replace(/>/g, "&gt;");
 }
 
-export async function generateRegistrationPrint(socialRegistrationId: string) {
+async function buildRegistrationHtml(socialRegistrationId: string) {
   console.log("[generateRegistrationPrint] start for", socialRegistrationId);
 
   // Carrega o cadastro principal
@@ -328,6 +328,16 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
 </body>
 </html>
   `;
+
+  return html;
+}
+
+export async function generateRegistrationHtml(socialRegistrationId: string) {
+  return await buildRegistrationHtml(socialRegistrationId);
+}
+
+export async function generateRegistrationPrint(socialRegistrationId: string) {
+  const html = await buildRegistrationHtml(socialRegistrationId);
 
   // Renderiza em um iframe oculto para evitar bloqueio de pop-up e telas em branco
   const iframe = document.createElement('iframe');

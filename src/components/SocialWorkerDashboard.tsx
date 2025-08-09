@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2, Printer } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2, Printer, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -25,6 +25,8 @@ import RegistrationHistory from './registration/RegistrationHistory';
 import RegistrationMessages from './registration/RegistrationMessages';
 import RegistrationDocuments from './registration/RegistrationDocuments';
 import { generateRegistrationPrint } from '@/utils/print/generateRegistrationPrint';
+import { downloadDossierZip } from '@/utils/zip/downloadDossierZip';
+
 
 interface UserProfile {
   id: string;
@@ -230,18 +232,32 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const handlePrint = async (registrationId: string) => {
-    try {
-      await generateRegistrationPrint(registrationId);
-    } catch (e) {
-      console.error('[SocialWorkerDashboard] print error:', e);
-      toast({
-        title: 'Erro ao imprimir',
-        description: 'Não foi possível gerar a página de impressão.',
-        variant: 'destructive',
-      });
-    }
-  };
+const handlePrint = async (registrationId: string) => {
+  try {
+    await generateRegistrationPrint(registrationId);
+  } catch (e) {
+    console.error('[SocialWorkerDashboard] print error:', e);
+    toast({
+      title: 'Erro ao imprimir',
+      description: 'Não foi possível gerar a página de impressão.',
+      variant: 'destructive',
+    });
+  }
+};
+
+const handleDownloadDossier = async (registrationId: string) => {
+  try {
+    await downloadDossierZip(registrationId);
+    toast({ title: 'Gerando dossiê', description: 'O arquivo .zip será baixado em instantes.' });
+  } catch (e) {
+    console.error('[SocialWorkerDashboard] dossier download error:', e);
+    toast({
+      title: 'Erro ao baixar dossiê',
+      description: 'Não foi possível gerar o ZIP com anexos.',
+      variant: 'destructive',
+    });
+  }
+};
 
   if (loading) {
     return (
@@ -351,17 +367,26 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                               <DialogDescription>
                                 {registration.name} — aprove, edite, consulte histórico e envie mensagens
                               </DialogDescription>
-                              <div className="mt-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handlePrint(registration.id)}
-                                  className="inline-flex items-center gap-2"
-                                >
-                                  <Printer className="h-4 w-4" />
-                                  Imprimir cadastro
-                                </Button>
-                              </div>
+<div className="mt-2 flex gap-2">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => handlePrint(registration.id)}
+    className="inline-flex items-center gap-2"
+  >
+    <Printer className="h-4 w-4" />
+    Imprimir cadastro
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => handleDownloadDossier(registration.id)}
+    className="inline-flex items-center gap-2"
+  >
+    <Download className="h-4 w-4" />
+    Baixar dossiê (.zip)
+  </Button>
+</div>
                             </DialogHeader>
 
                               <Tabs defaultValue="atualizar" className="w-full">
@@ -517,17 +542,26 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                             <DialogDescription>
                               {registration.name} — aprove, edite, consulte histórico e envie mensagens
                             </DialogDescription>
-                            <div className="mt-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handlePrint(registration.id)}
-                                className="inline-flex items-center gap-2"
-                              >
-                                <Printer className="h-4 w-4" />
-                                Imprimir cadastro
-                              </Button>
-                            </div>
+<div className="mt-2 flex gap-2">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => handlePrint(registration.id)}
+    className="inline-flex items-center gap-2"
+  >
+    <Printer className="h-4 w-4" />
+    Imprimir cadastro
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => handleDownloadDossier(registration.id)}
+    className="inline-flex items-center gap-2"
+  >
+    <Download className="h-4 w-4" />
+    Baixar dossiê (.zip)
+  </Button>
+</div>
                           </DialogHeader>
 
                             <Tabs defaultValue="atualizar" className="w-full">
