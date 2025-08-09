@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,9 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [docType, setDocType] = useState('Outros');
+  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadData();
@@ -247,8 +250,23 @@ const handlePrint = async (registrationId: string) => {
 
 const handleDownloadDossier = async (registrationId: string) => {
   try {
+    const { count } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('social_registration_id', registrationId)
+      .not('file_path', 'is', null)
+      .neq('file_path', '');
+
+    if (!count || count === 0) {
+      toast({
+        title: 'Nenhum anexo encontrado',
+        description: 'O dossiê conterá apenas o formulário do cadastro.',
+      });
+    } else {
+      toast({ title: 'Gerando dossiê', description: 'O arquivo .zip será baixado em instantes.' });
+    }
+
     await downloadDossierZip(registrationId);
-    toast({ title: 'Gerando dossiê', description: 'O arquivo .zip será baixado em instantes.' });
   } catch (e) {
     console.error('[SocialWorkerDashboard] dossier download error:', e);
     toast({
@@ -256,6 +274,78 @@ const handleDownloadDossier = async (registrationId: string) => {
       description: 'Não foi possível gerar o ZIP com anexos.',
       variant: 'destructive',
     });
+  }
+};
+
+const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9_\.\-]+/g, '_');
+
+const handleFilesSelected = async (
+  fileList: FileList,
+  registrationId: string,
+  citizenUserId: string
+) => {
+  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+  const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png'];
+
+  const files = Array.from(fileList);
+  let success = 0;
+
+  await Promise.all(
+    files.map(async (file) => {
+      if (file.size > MAX_SIZE) {
+        toast({
+          title: 'Arquivo muito grande',
+          description: `${file.name} excede 10MB.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (!ALLOWED.includes(file.type)) {
+        toast({
+          title: 'Tipo de arquivo não suportado',
+          description: `${file.name} deve ser PDF, JPG ou PNG.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const path = `${citizenUserId}/${crypto.randomUUID()}_${sanitizeFileName(file.name)}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('documents')
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadErr) {
+        console.error('[upload] storage error:', uploadErr);
+        toast({ title: 'Falha no upload', description: `${file.name}`, variant: 'destructive' });
+        return;
+      }
+
+      const { error: insertErr } = await supabase.from('documents').insert({
+        user_id: citizenUserId,
+        social_registration_id: registrationId,
+        document_name: file.name,
+        document_type: docType,
+        file_path: path,
+        file_type: file.type,
+        file_size: file.size,
+        status: 'documento_enviado',
+        upload_date: new Date().toISOString(),
+      });
+
+      if (insertErr) {
+        console.error('[upload] insert error:', insertErr);
+        toast({ title: 'Erro ao salvar metadados', description: `${file.name}`, variant: 'destructive' });
+        return;
+      }
+
+      success += 1;
+    })
+  );
+
+  if (success > 0) {
+    toast({ title: 'Upload concluído', description: `${success} arquivo(s) anexado(s).` });
+    setDocsRefreshKey((k) => k + 1);
   }
 };
 
@@ -439,7 +529,49 @@ const handleDownloadDossier = async (registrationId: string) => {
 
                                 <TabsContent value="documentos">
                                   {selectedRegistration && (
-                                    <RegistrationDocuments socialRegistrationId={selectedRegistration.id} />
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-2">
+                                        <Select value={docType} onValueChange={setDocType}>
+                                          <SelectTrigger className="w-56">
+                                            <SelectValue placeholder="Tipo do documento" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="RG">RG</SelectItem>
+                                            <SelectItem value="CPF">CPF</SelectItem>
+                                            <SelectItem value="Comprovante de residência">Comprovante de residência</SelectItem>
+                                            <SelectItem value="Outros">Outros</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+
+                                        <input
+                                          ref={fileInputRef}
+                                          type="file"
+                                          accept=".pdf,image/*"
+                                          multiple
+                                          className="hidden"
+                                          onChange={(e) => {
+                                            if (e.target.files) {
+                                              handleFilesSelected(
+                                                e.target.files,
+                                                selectedRegistration.id,
+                                                selectedRegistration.user_id
+                                              );
+                                              e.currentTarget.value = '';
+                                            }
+                                          }}
+                                        />
+
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => fileInputRef.current?.click()}
+                                        >
+                                          Anexar documentos
+                                        </Button>
+                                      </div>
+
+                                      <RegistrationDocuments key={docsRefreshKey} socialRegistrationId={selectedRegistration.id} />
+                                    </div>
                                   )}
                                 </TabsContent>
 
