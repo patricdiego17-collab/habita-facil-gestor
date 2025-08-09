@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface UserProfile {
   id: string;
@@ -48,42 +60,70 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
 
   const loadData = async () => {
     try {
-      // Load assigned registrations
+      // Carrega casos atribuídos (sem embed) e mapeia e-mails
       const { data: assignedData, error: assignedError } = await supabase
         .from('social_registrations')
-        .select(`
-          *,
-          profiles(email)
-        `)
+        .select('*')
         .eq('assigned_social_worker_id', userProfile.id)
         .order('created_at', { ascending: false });
 
       if (assignedError) {
         console.error('Error loading assigned registrations:', assignedError);
+        setAssignedRegistrations([]);
       } else {
-        const formattedAssigned = assignedData?.map(reg => ({
+        const assigned = assignedData || [];
+        const assignedUserIds = Array.from(new Set(assigned.map((r: any) => r.user_id).filter(Boolean)));
+        let emailMap: Record<string, string | null> = {};
+        if (assignedUserIds.length > 0) {
+          const { data: profsA, error: profErrA } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', assignedUserIds);
+          if (profErrA) {
+            console.error('Error loading emails for assigned registrations:', profErrA);
+          } else {
+            (profsA || []).forEach((p: any) => {
+              emailMap[p.user_id as string] = (p as any).email ?? null;
+            });
+          }
+        }
+        const formattedAssigned = assigned.map((reg: any) => ({
           ...reg,
-          email: (reg.profiles as any)?.email || 'N/A'
-        })) || [];
+          email: emailMap[reg.user_id] || 'N/A',
+        }));
         setAssignedRegistrations(formattedAssigned);
       }
 
-      // Load all registrations for reference
+      // Carrega todos os cadastros (sem embed) e mapeia e-mails
       const { data: allData, error: allError } = await supabase
         .from('social_registrations')
-        .select(`
-          *,
-          profiles(email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (allError) {
         console.error('Error loading all registrations:', allError);
+        setAllRegistrations([]);
       } else {
-        const formattedAll = allData?.map(reg => ({
+        const all = allData || [];
+        const allUserIds = Array.from(new Set(all.map((r: any) => r.user_id).filter(Boolean)));
+        let emailMapAll: Record<string, string | null> = {};
+        if (allUserIds.length > 0) {
+          const { data: profsAll, error: profErrAll } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', allUserIds);
+          if (profErrAll) {
+            console.error('Error loading emails for all registrations:', profErrAll);
+          } else {
+            (profsAll || []).forEach((p: any) => {
+              emailMapAll[p.user_id as string] = (p as any).email ?? null;
+            });
+          }
+        }
+        const formattedAll = all.map((reg: any) => ({
           ...reg,
-          email: (reg.profiles as any)?.email || 'N/A'
-        })) || [];
+          email: emailMapAll[reg.user_id] || 'N/A',
+        }));
         setAllRegistrations(formattedAll);
       }
     } catch (error) {
@@ -135,6 +175,29 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
         variant: "destructive",
       });
     }
+  };
+
+  const deleteRegistration = async (registrationId: string) => {
+    console.log('[SocialWorkerDashboard] Deleting registration:', registrationId);
+    const { error } = await supabase.rpc('admin_delete_registration', {
+      p_registration_id: registrationId,
+    });
+
+    if (error) {
+      console.error('Error deleting registration:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o cadastro.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Cadastro excluído',
+      description: 'O cadastro foi removido com sucesso.',
+    });
+    loadData();
   };
 
   const getStatusBadge = (status: string) => {
@@ -240,7 +303,7 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data de Cadastro</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -251,61 +314,86 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
                     <TableCell>{registration.email}</TableCell>
                     <TableCell>{getStatusBadge(registration.status)}</TableCell>
                     <TableCell>{formatDate(registration.created_at)}</TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRegistration(registration);
-                              setStatusUpdate(registration.status);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Atualizar
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md">
-                          <DialogHeader>
-                            <DialogTitle>Atualizar Status</DialogTitle>
-                            <DialogDescription>
-                              Atualize o status e adicione comentários para {registration.name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <label className="text-sm font-medium">Novo Status</label>
-                              <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pending">Pendente</SelectItem>
-                                  <SelectItem value="in_review">Em Análise</SelectItem>
-                                  <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                  <SelectItem value="approved">Aprovado</SelectItem>
-                                  <SelectItem value="rejected">Rejeitado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <label className="text-sm font-medium">Comentário</label>
-                              <Textarea
-                                placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                              />
-                            </div>
-
-                            <Button onClick={updateRegistrationStatus} className="w-full">
-                              <MessageCircle className="h-4 w-4 mr-2" />
-                              Atualizar Status
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedRegistration(registration);
+                                setStatusUpdate(registration.status);
+                              }}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Atualizar
                             </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle>Atualizar Status</DialogTitle>
+                              <DialogDescription>
+                                Atualize o status e adicione comentários para {registration.name}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Novo Status</label>
+                                <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pendente</SelectItem>
+                                    <SelectItem value="in_review">Em Análise</SelectItem>
+                                    <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                    <SelectItem value="approved">Aprovado</SelectItem>
+                                    <SelectItem value="rejected">Rejeitado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div>
+                                <label className="text-sm font-medium">Comentário</label>
+                                <Textarea
+                                  placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                  value={message}
+                                  onChange={(e) => setMessage(e.target.value)}
+                                />
+                              </div>
+
+                              <Button onClick={updateRegistrationStatus} className="w-full">
+                                <MessageCircle className="h-4 w-4 mr-2" />
+                                Atualizar Status
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação é irreversível. Tem certeza que deseja excluir o cadastro de {registration.name}?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteRegistration(registration.id)}>
+                                Confirmar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -193,23 +193,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
 
   const loadData = async () => {
     try {
-      // Load all registrations with user data
+      // Carrega cadastros sem embed inválido e busca e-mails separadamente
       const { data: registrationsData, error: regError } = await supabase
         .from('social_registrations')
-        .select(`
-          *,
-          profiles(email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (regError) {
         console.error('Error loading registrations:', regError);
+        setRegistrations([]);
       } else {
-        const formattedRegs = registrationsData?.map(reg => ({
+        const regs = registrationsData || [];
+        const userIds = Array.from(new Set(regs.map((r: any) => r.user_id).filter(Boolean)));
+        let emailMap: Record<string, string | null> = {};
+        if (userIds.length > 0) {
+          const { data: profilesData, error: profErr } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', userIds);
+          if (profErr) {
+            console.error('Error loading profiles for emails:', profErr);
+          } else {
+            (profilesData || []).forEach((p: any) => {
+              emailMap[p.user_id as string] = (p as any).email ?? null;
+            });
+          }
+        }
+        const withEmails = regs.map((reg: any) => ({
           ...reg,
-          email: (reg.profiles as any)?.email || 'N/A'
-        })) || [];
-        setRegistrations(formattedRegs);
+          email: emailMap[reg.user_id] || 'N/A',
+        }));
+        setRegistrations(withEmails);
       }
 
       // Load social workers
