@@ -462,6 +462,12 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
                 </div>
               </CardHeader>
               <CardContent>
+                {familyMembers.some(m => m.relationship === 'Responsável') && (
+                  <div className="mb-4 p-3 rounded-md bg-accent flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm">Responsável familiar: <strong>{familyMembers.find(m => m.relationship === 'Responsável')?.member_name}</strong></span>
+                  </div>
+                )}
                 <div className="space-y-4">
                   {familyMembers.map((member) => (
                     <div key={member.id} className="border rounded-lg p-4">

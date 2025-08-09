@@ -149,13 +149,20 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
       return;
     }
 
-    // Verificar se há pelo menos um responsável
-    const hasResponsavel = familyMembers.some(member => member.parentesco === 'Responsável');
-    if (!hasResponsavel) {
+    // Garantir que haja pelo menos um responsável
+    let submissionMembers = [...familyMembers];
+    const hasResponsavel = submissionMembers.some(member => member.parentesco === 'Responsável');
+    if (!hasResponsavel && submissionMembers.length > 0) {
+      submissionMembers[0] = { ...submissionMembers[0], parentesco: 'Responsável' };
       toast({
-        title: "Responsável obrigatório",
-        description: "Deve haver pelo menos um responsável familiar.",
-        variant: "destructive",
+        title: 'Responsável definido automaticamente',
+        description: `Definimos ${submissionMembers[0].nome} como Responsável familiar. Você pode ajustar depois.`,
+      });
+    } else if (!hasResponsavel) {
+      toast({
+        title: 'Lista vazia',
+        description: 'Adicione pelo menos um membro da família.',
+        variant: 'destructive',
       });
       return;
     }
@@ -201,7 +208,7 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
           .eq('social_registration_id', socialRegistration.id);
 
         // Save family members to database
-        const familyData = familyMembers.map(member => ({
+        const familyData = submissionMembers.map(member => ({
           user_id: user.id,
           social_registration_id: socialRegistration.id,
           member_name: member.nome,
@@ -234,7 +241,7 @@ export const FamilyCompositionForm = ({ onNext, onBack, initialData = [] }: Fami
         });
       }
 
-      onNext(familyMembers);
+      onNext(submissionMembers);
       toast({
         title: "Composição familiar concluída",
         description: "Avançando para upload de documentos...",

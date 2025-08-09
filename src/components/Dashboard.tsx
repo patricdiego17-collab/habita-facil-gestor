@@ -156,7 +156,7 @@ export const Dashboard = ({ userRole, userName, onNavigate }: DashboardProps) =>
       title: "Acompanhamento",
       description: "Acompanhar andamento do processo",
       icon: CheckSquare,
-      action: () => onNavigate('tracking'),
+      action: () => onNavigate('my-data'),
       variant: "default" as const
     }
   ];

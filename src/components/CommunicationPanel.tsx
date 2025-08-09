@@ -165,6 +165,29 @@ export const CommunicationPanel: React.FC<CommunicationPanelProps> = ({
     }
   }, [socialRegistrationId]);
 
+  useEffect(() => {
+    if (!socialRegistrationId) return;
+
+    const channel = supabase
+      .channel(`messages-realtime-${socialRegistrationId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `social_registration_id=eq.${socialRegistrationId}` },
+        async () => {
+          await loadMessages();
+          toast({
+            title: 'Nova mensagem',
+            description: 'Você recebeu uma nova mensagem.',
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [socialRegistrationId]);
+
   if (loading) {
     return (
       <Card>
