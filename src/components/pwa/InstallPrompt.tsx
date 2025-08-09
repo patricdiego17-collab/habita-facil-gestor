@@ -1,20 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { X, Download } from 'lucide-react';
 
-const isIos = () => {
-  const ua = window.navigator.userAgent.toLowerCase();
-  return /iphone|ipad|ipod/.test(ua);
-};
+const isIos = () => typeof window !== 'undefined' && /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
-export const InstallPrompt: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [visible, setVisible] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
+function InstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [visible, setVisible] = React.useState(false);
+  const [isStandalone, setIsStandalone] = React.useState(false);
 
-  useEffect(() => {
-    // iOS standalone detection
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || (window as any).navigator.standalone;
     setIsStandalone(Boolean(standalone));
 
@@ -37,10 +35,12 @@ export const InstallPrompt: React.FC = () => {
   const onInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setVisible(false);
+    try {
+      await deferredPrompt.userChoice;
+    } catch (e) {
+      // ignore
     }
+    setVisible(false);
     setDeferredPrompt(null);
   };
 
@@ -74,6 +74,6 @@ export const InstallPrompt: React.FC = () => {
       </Card>
     </div>
   );
-};
+}
 
 export default InstallPrompt;
