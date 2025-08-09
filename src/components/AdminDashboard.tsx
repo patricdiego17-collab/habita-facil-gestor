@@ -7,9 +7,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle, Check, X } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Check, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+// Importações adicionais
+import SocialWorkersManager from './admin/SocialWorkersManager';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface UserProfile {
   id: string;
@@ -265,6 +278,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
     }
   };
 
+  // Novo: excluir cadastro social com confirmação
+  const deleteRegistration = async (registrationId: string) => {
+    console.log('[AdminDashboard] Deleting registration:', registrationId);
+    const { error } = await supabase.rpc('admin_delete_registration', {
+      p_registration_id: registrationId,
+    });
+
+    if (error) {
+      console.error('Error deleting registration:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir o cadastro.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Cadastro excluído',
+      description: 'O cadastro foi removido com sucesso.',
+    });
+    loadData();
+  };
+
   const getStatusBadge = (status: string) => {
     const statusColors: { [key: string]: string } = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -367,7 +404,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data de Cadastro</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -378,79 +415,104 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
                   <TableCell>{registration.email}</TableCell>
                   <TableCell>{getStatusBadge(registration.status)}</TableCell>
                   <TableCell>{formatDate(registration.created_at)}</TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRegistration(registration);
-                            setStatusUpdate(registration.status);
-                            setAssignedWorker(registration.assigned_social_worker_id || '');
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Gerenciar
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Gerenciar Cadastro</DialogTitle>
-                          <DialogDescription>
-                            Atualize o status e adicione comentários para {registration.name}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="text-sm font-medium">Status</label>
-                            <Select value={statusUpdate} onValueChange={setStatusUpdate}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">Pendente</SelectItem>
-                                <SelectItem value="in_review">Em Análise</SelectItem>
-                                <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
-                                <SelectItem value="approved">Aprovado</SelectItem>
-                                <SelectItem value="rejected">Rejeitado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium">Assistente Social</label>
-                            <Select value={assignedWorker} onValueChange={setAssignedWorker}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione um assistente social" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="">Nenhum</SelectItem>
-                                {socialWorkers.map((worker) => (
-                                  <SelectItem key={worker.id} value={worker.id}>
-                                    {worker.full_name || worker.email}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium">Comentário</label>
-                            <Textarea
-                              placeholder="Adicione um comentário sobre a evolução do cadastro..."
-                              value={message}
-                              onChange={(e) => setMessage(e.target.value)}
-                            />
-                          </div>
-
-                          <Button onClick={updateRegistrationStatus} className="w-full">
-                            <MessageCircle className="h-4 w-4 mr-2" />
-                            Atualizar
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedRegistration(registration);
+                              setStatusUpdate(registration.status);
+                              setAssignedWorker(registration.assigned_social_worker_id || '');
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Gerenciar
                           </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Gerenciar Cadastro</DialogTitle>
+                            <DialogDescription>
+                              Atualize o status e adicione comentários para {registration.name}
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-sm font-medium">Status</label>
+                              <Select value={statusUpdate} onValueChange={setStatusUpdate}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione o status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pendente</SelectItem>
+                                  <SelectItem value="in_review">Em Análise</SelectItem>
+                                  <SelectItem value="waiting_documents">Aguardando Documentos</SelectItem>
+                                  <SelectItem value="approved">Aprovado</SelectItem>
+                                  <SelectItem value="rejected">Rejeitado</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-medium">Assistente Social</label>
+                              <Select value={assignedWorker} onValueChange={setAssignedWorker}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione um assistente social" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="">Nenhum</SelectItem>
+                                  {socialWorkers.map((worker) => (
+                                    <SelectItem key={worker.id} value={worker.id}>
+                                      {worker.full_name || worker.email}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <label className="text-sm font-medium">Comentário</label>
+                              <Textarea
+                                placeholder="Adicione um comentário sobre a evolução do cadastro..."
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                              />
+                            </div>
+
+                            <Button onClick={updateRegistrationStatus} className="w-full">
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Atualizar
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação é irreversível. Tem certeza que deseja excluir o cadastro de {registration.name}?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteRegistration(registration.id)}>
+                              Confirmar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -539,6 +601,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
           )}
         </CardContent>
       </Card>
+
+      {/* Novo: Gestão de Assistentes Sociais */}
+      <SocialWorkersManager />
     </div>
   );
 };

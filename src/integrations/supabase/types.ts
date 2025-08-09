@@ -158,27 +158,36 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cpf: string | null
           created_at: string
+          cress: string | null
           email: string | null
           full_name: string | null
+          functional_code: string | null
           id: string
           role: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
+          cress?: string | null
           email?: string | null
           full_name?: string | null
+          functional_code?: string | null
           id?: string
           role?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          cpf?: string | null
           created_at?: string
+          cress?: string | null
           email?: string | null
           full_name?: string | null
+          functional_code?: string | null
           id?: string
           role?: string
           updated_at?: string
@@ -388,8 +397,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_registration: {
+        Args: { p_registration_id: string }
+        Returns: undefined
+      }
       admin_set_user_role: {
         Args: { p_user_id: string; p_role: string }
+        Returns: undefined
+      }
+      admin_update_profile: {
+        Args: {
+          p_user_id: string
+          p_full_name?: string
+          p_email?: string
+          p_cress?: string
+          p_cpf?: string
+          p_functional_code?: string
+        }
         Returns: undefined
       }
       approve_role_request: {
