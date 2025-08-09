@@ -19,6 +19,7 @@ function escapeHtml(str?: string | null) {
 export async function generateRegistrationPrint(socialRegistrationId: string) {
   console.log("[generateRegistrationPrint] start for", socialRegistrationId);
 
+  // Carrega o cadastro principal
   const [{ data: reg, error: regErr }] = await Promise.all([
     supabase
       .from("social_registrations")
@@ -32,6 +33,7 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
     throw new Error("Não foi possível carregar o cadastro.");
   }
 
+  // Carrega famílias, documentos, histórico e mensagens
   const [
     { data: family, error: famErr },
     { data: docs, error: docErr },
@@ -65,7 +67,32 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
   if (histErr) console.warn("[generateRegistrationPrint] hist error:", histErr);
   if (msgErr) console.warn("[generateRegistrationPrint] msgs error:", msgErr);
 
-  // Mapa de perfis para identificar quem fez alterações no histórico (updated_by)
+  let finalFamily = (family || []) as any[];
+
+  // Fallback: se não retornou membros por social_registration_id, tenta por user_id,
+  // incluindo casos onde social_registration_id está nulo (dados antigos).
+  if (!famErr && finalFamily.length === 0) {
+    console.log("[generateRegistrationPrint] family empty by registration id, trying fallback by user_id...");
+    const { data: familyFallback, error: famFallbackErr } = await supabase
+      .from("family_compositions")
+      .select("*")
+      .eq("user_id", reg.user_id)
+      .or(`social_registration_id.is.null,social_registration_id.eq.${socialRegistrationId}`)
+      .order("created_at", { ascending: true });
+
+    if (famFallbackErr) {
+      console.warn("[generateRegistrationPrint] fallback family error:", famFallbackErr);
+    } else if (familyFallback && familyFallback.length > 0) {
+      console.log("[generateRegistrationPrint] fallback family count:", familyFallback.length);
+      finalFamily = familyFallback as any[];
+    } else {
+      console.log("[generateRegistrationPrint] no family found on fallback either");
+    }
+  } else {
+    console.log("[generateRegistrationPrint] family count:", finalFamily.length);
+  }
+
+  // Mapa de perfis para identificar quem fez alterações no histórico (updated_by) + perfil do dono
   // Ajuste: incluir também o user_id do dono do cadastro para obter seu e-mail
   const updaterIds = Array.from(
     new Set(
@@ -194,7 +221,7 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
         </tr>
       </thead>
       <tbody>
-        ${(family || [])
+        ${(finalFamily || [])
           .map((m: any) => `
             <tr>
               <td>${escapeHtml(m.member_name)}</td>
@@ -208,7 +235,7 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
             </tr>
           `)
           .join("")}
-        ${(!family || family.length === 0) ? `<tr><td colspan="8" class="muted">Sem membros cadastrados.</td></tr>` : ""}
+        ${(!finalFamily || finalFamily.length === 0) ? `<tr><td colspan="8" class="muted">Sem membros cadastrados.</td></tr>` : ""}
       </tbody>
     </table>
   </div>
