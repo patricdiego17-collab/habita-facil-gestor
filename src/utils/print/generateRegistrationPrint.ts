@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 function formatDate(iso?: string | null) {
@@ -67,8 +66,14 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
   if (msgErr) console.warn("[generateRegistrationPrint] msgs error:", msgErr);
 
   // Mapa de perfis para identificar quem fez alterações no histórico (updated_by)
+  // Ajuste: incluir também o user_id do dono do cadastro para obter seu e-mail
   const updaterIds = Array.from(
-    new Set((history || []).map((h: any) => h.updated_by).filter(Boolean))
+    new Set(
+      [
+        ...((history || []).map((h: any) => h.updated_by).filter(Boolean) as string[]),
+        reg.user_id,
+      ].filter(Boolean)
+    )
   );
 
   let profilesMap: Record<string, { full_name: string | null; email: string | null }> = {};
@@ -89,6 +94,10 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
       console.warn("[generateRegistrationPrint] profiles error:", profErr);
     }
   }
+
+  // E-mail do cidadão (dono do cadastro) vindo de profiles
+  const ownerProfile = reg.user_id ? profilesMap[reg.user_id] : undefined;
+  const ownerEmailHtml = ownerProfile?.email ? escapeHtml(ownerProfile.email) : "-";
 
   const statusLabels: Record<string, string> = {
     pending: "Pendente",
@@ -152,7 +161,7 @@ export async function generateRegistrationPrint(socialRegistrationId: string) {
       <div><strong>RG:</strong> ${escapeHtml(reg.rg)}</div>
       <div><strong>Data de Nascimento:</strong> ${escapeHtml(reg.birth_date)}</div>
       <div><strong>Telefone:</strong> ${escapeHtml(reg.phone)}</div>
-      <div><strong>E-mail:</strong> ${escapeHtml(reg.email)}</div>
+      <div><strong>E-mail:</strong> ${ownerEmailHtml}</div>
       <div><strong>Profissão:</strong> ${escapeHtml(reg.profession)}</div>
       <div><strong>Escolaridade:</strong> ${escapeHtml(reg.education)}</div>
       <div><strong>Estado Civil:</strong> ${escapeHtml(reg.marital_status)}</div>
