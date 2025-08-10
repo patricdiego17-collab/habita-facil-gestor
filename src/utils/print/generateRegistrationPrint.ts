@@ -16,10 +16,9 @@ function escapeHtml(str?: string | null) {
     .replace(/>/g, "&gt;");
 }
 
-async function buildRegistrationHtml(socialRegistrationId: string) {
+export async function generateRegistrationPrint(socialRegistrationId: string) {
   console.log("[generateRegistrationPrint] start for", socialRegistrationId);
 
-  // Carrega o cadastro principal
   const [{ data: reg, error: regErr }] = await Promise.all([
     supabase
       .from("social_registrations")
@@ -33,7 +32,6 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
     throw new Error("Não foi possível carregar o cadastro.");
   }
 
-  // Carrega famílias, documentos, histórico e mensagens
   const [
     { data: family, error: famErr },
     { data: docs, error: docErr },
@@ -67,32 +65,7 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
   if (histErr) console.warn("[generateRegistrationPrint] hist error:", histErr);
   if (msgErr) console.warn("[generateRegistrationPrint] msgs error:", msgErr);
 
-  let finalFamily = (family || []) as any[];
-
-  // Fallback: se não retornou membros por social_registration_id, tenta por user_id,
-  // incluindo casos onde social_registration_id está nulo (dados antigos).
-  if (!famErr && finalFamily.length === 0) {
-    console.log("[generateRegistrationPrint] family empty by registration id, trying fallback by user_id...");
-    const { data: familyFallback, error: famFallbackErr } = await supabase
-      .from("family_compositions")
-      .select("*")
-      .eq("user_id", reg.user_id)
-      .or(`social_registration_id.is.null,social_registration_id.eq.${socialRegistrationId}`)
-      .order("created_at", { ascending: true });
-
-    if (famFallbackErr) {
-      console.warn("[generateRegistrationPrint] fallback family error:", famFallbackErr);
-    } else if (familyFallback && familyFallback.length > 0) {
-      console.log("[generateRegistrationPrint] fallback family count:", familyFallback.length);
-      finalFamily = familyFallback as any[];
-    } else {
-      console.log("[generateRegistrationPrint] no family found on fallback either");
-    }
-  } else {
-    console.log("[generateRegistrationPrint] family count:", finalFamily.length);
-  }
-
-  // Mapa de perfis para identificar quem fez alterações no histórico (updated_by) + perfil do dono
+  // Mapa de perfis para identificar quem fez alterações no histórico (updated_by)
   // Ajuste: incluir também o user_id do dono do cadastro para obter seu e-mail
   const updaterIds = Array.from(
     new Set(
@@ -221,7 +194,7 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
         </tr>
       </thead>
       <tbody>
-        ${(finalFamily || [])
+        ${(family || [])
           .map((m: any) => `
             <tr>
               <td>${escapeHtml(m.member_name)}</td>
@@ -235,7 +208,7 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
             </tr>
           `)
           .join("")}
-        ${(!finalFamily || finalFamily.length === 0) ? `<tr><td colspan="8" class="muted">Sem membros cadastrados.</td></tr>` : ""}
+        ${(!family || family.length === 0) ? `<tr><td colspan="8" class="muted">Sem membros cadastrados.</td></tr>` : ""}
       </tbody>
     </table>
   </div>
@@ -328,16 +301,6 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
 </body>
 </html>
   `;
-
-  return html;
-}
-
-export async function generateRegistrationHtml(socialRegistrationId: string) {
-  return await buildRegistrationHtml(socialRegistrationId);
-}
-
-export async function generateRegistrationPrint(socialRegistrationId: string) {
-  const html = await buildRegistrationHtml(socialRegistrationId);
 
   // Renderiza em um iframe oculto para evitar bloqueio de pop-up e telas em branco
   const iframe = document.createElement('iframe');

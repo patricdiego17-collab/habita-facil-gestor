@@ -3,41 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Gera uma URL assinada temporária e abre o download do arquivo privado no bucket 'documents'
- * @param filePath caminho do arquivo dentro do bucket (ex: "user-uuid/doc-uuid.pdf" ou "documents/user-uuid/doc.pdf")
+ * @param filePath caminho do arquivo dentro do bucket (ex: "user-uuid/doc-uuid.pdf")
  * @param filename nome sugerido para o download (opcional)
  */
-function normalizeStoragePath(path: string) {
-  let p = (path || "").trim().replace(/^\/+/, "");
-  if (p.toLowerCase().startsWith("documents/")) {
-    p = p.slice("documents/".length);
-  }
-  return p;
-}
-
-function ensureExtension(nameFromUser: string | undefined, storagePath: string) {
-  const pathExt = storagePath.includes(".") ? storagePath.split(".").pop() : undefined;
-  if (!nameFromUser) return storagePath.split("/").pop() || "documento";
-  const hasDot = nameFromUser.includes(".");
-  if (!hasDot && pathExt) {
-    return `${nameFromUser}.${pathExt}`;
-  }
-  return nameFromUser;
-}
-
 export async function downloadDocument(filePath: string, filename?: string) {
-  const normalizedPath = normalizeStoragePath(filePath);
-  console.log("[downloadDocument] original path:", filePath, "normalized:", normalizedPath, "filename:", filename);
-
-  const suggestedName = ensureExtension(filename, normalizedPath);
-
+  console.log("[downloadDocument] path:", filePath, "filename:", filename);
   const { data, error } = await supabase.storage
     .from("documents")
-    .createSignedUrl(normalizedPath, 60, {
-      download: suggestedName || undefined,
+    .createSignedUrl(filePath, 60, {
+      download: filename || undefined,
     });
 
   if (error || !data?.signedUrl) {
-    console.error("[downloadDocument] error creating signed URL:", error);
+    console.error("[downloadDocument] error:", error);
     throw new Error("Não foi possível gerar o link de download.");
   }
 
@@ -52,7 +30,7 @@ export async function downloadDocument(filePath: string, filename?: string) {
     const objectUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = objectUrl;
-    a.download = suggestedName || normalizedPath.split('/').pop() || 'documento';
+    a.download = filename || filePath.split('/').pop() || 'documento';
     document.body.appendChild(a);
     a.click();
     a.remove();

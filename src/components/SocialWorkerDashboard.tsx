@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2, Printer, Download } from 'lucide-react';
+import { Users, FileText, Clock, Plus, Edit, MessageCircle, Trash2, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -25,8 +25,6 @@ import RegistrationHistory from './registration/RegistrationHistory';
 import RegistrationMessages from './registration/RegistrationMessages';
 import RegistrationDocuments from './registration/RegistrationDocuments';
 import { generateRegistrationPrint } from '@/utils/print/generateRegistrationPrint';
-import { downloadDossierZip } from '@/utils/zip/downloadDossierZip';
-
 
 interface UserProfile {
   id: string;
@@ -59,9 +57,6 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [docType, setDocType] = useState('Outros');
-  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     loadData();
@@ -69,76 +64,39 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
 
   const loadData = async () => {
     try {
-      // Carrega casos atribuídos e também os aprovados por este assistente (união)
-      // 1) Atribuídos diretamente
+      // Carrega casos atribuídos (sem embed) e mapeia e-mails
       const { data: assignedData, error: assignedError } = await supabase
         .from('social_registrations')
         .select('*')
         .eq('assigned_social_worker_id', userProfile.id)
         .order('created_at', { ascending: false });
 
-      const assigned = assignedData || [];
       if (assignedError) {
         console.error('Error loading assigned registrations:', assignedError);
-      }
-
-      // 2) Aprovados por este assistente (via histórico)
-      const { data: approvalsRt, error: approvalsRtErr } = await supabase
-        .from('registration_tracking')
-        .select('social_registration_id')
-        .eq('status', 'approved')
-        .eq('updated_by', userProfile.user_id);
-
-      if (approvalsRtErr) {
-        console.error('Error loading approvals from tracking:', approvalsRtErr);
-      }
-
-      let approvedRegs: any[] = [];
-      const approvedIds: string[] = Array.from(
-        new Set(((approvalsRt || []) as any[]).map((r: any) => r.social_registration_id as string).filter(Boolean))
-      ) as string[];
-      if (approvedIds.length > 0) {
-        const { data: approvalsRegsData, error: approvalsRegsErr } = await supabase
-          .from('social_registrations')
-          .select('*')
-          .in('id', approvedIds);
-        if (approvalsRegsErr) {
-          console.error('Error loading approved registrations:', approvalsRegsErr);
-        } else {
-          approvedRegs = approvalsRegsData || [];
+        setAssignedRegistrations([]);
+      } else {
+        const assigned = assignedData || [];
+        const assignedUserIds = Array.from(new Set(assigned.map((r: any) => r.user_id).filter(Boolean)));
+        let emailMap: Record<string, string | null> = {};
+        if (assignedUserIds.length > 0) {
+          const { data: profsA, error: profErrA } = await supabase
+            .from('profiles')
+            .select('user_id, email')
+            .in('user_id', assignedUserIds);
+          if (profErrA) {
+            console.error('Error loading emails for assigned registrations:', profErrA);
+          } else {
+            (profsA || []).forEach((p: any) => {
+              emailMap[p.user_id as string] = (p as any).email ?? null;
+            });
+          }
         }
+        const formattedAssigned = assigned.map((reg: any) => ({
+          ...reg,
+          email: emailMap[reg.user_id] || 'N/A',
+        }));
+        setAssignedRegistrations(formattedAssigned);
       }
-
-      // 3) União sem duplicados
-      const merged = [...assigned, ...approvedRegs].reduce((acc: any[], reg: any) => {
-        if (!acc.some((r: any) => r.id === reg.id)) acc.push(reg);
-        return acc;
-      }, [] as any[]);
-
-      // 4) Mapear e-mails para a união
-      const unionUserIds: string[] = Array.from(
-        new Set(merged.map((r: any) => r.user_id as string).filter(Boolean))
-      ) as string[];
-      let emailMap: Record<string, string | null> = {};
-      if (unionUserIds.length > 0) {
-        const { data: profs, error: profErr } = await supabase
-          .from('profiles')
-          .select('user_id, email')
-          .in('user_id', unionUserIds);
-        if (profErr) {
-          console.error('Error loading emails for assigned/approved registrations:', profErr);
-        } else {
-          (profs || []).forEach((p: any) => {
-            emailMap[p.user_id as string] = (p as any).email ?? null;
-          });
-        }
-      }
-
-      const formattedAssigned = merged.map((reg: any) => ({
-        ...reg,
-        email: emailMap[reg.user_id] || 'N/A',
-      }));
-      setAssignedRegistrations(formattedAssigned);
 
       // Carrega todos os cadastros (sem embed) e mapeia e-mails
       const { data: allData, error: allError } = await supabase
@@ -183,15 +141,9 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     if (!selectedRegistration || !statusUpdate) return;
 
     try {
-      const updates: any = { status: statusUpdate };
-      if (statusUpdate === 'approved') {
-        // Ao aprovar, atribui automaticamente o caso a este assistente social
-        updates.assigned_social_worker_id = userProfile.id;
-      }
-
       const { error: updateError } = await supabase
         .from('social_registrations')
-        .update(updates)
+        .update({ status: statusUpdate })
         .eq('id', selectedRegistration.id);
 
       if (updateError) throw updateError;
@@ -278,119 +230,18 @@ const SocialWorkerDashboard: React.FC<SocialWorkerDashboardProps> = ({ userProfi
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-const handlePrint = async (registrationId: string) => {
-  try {
-    await generateRegistrationPrint(registrationId);
-  } catch (e) {
-    console.error('[SocialWorkerDashboard] print error:', e);
-    toast({
-      title: 'Erro ao imprimir',
-      description: 'Não foi possível gerar a página de impressão.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const handleDownloadDossier = async (registrationId: string) => {
-  try {
-    const { count } = await supabase
-      .from('documents')
-      .select('*', { count: 'exact', head: true })
-      .eq('social_registration_id', registrationId)
-      .not('file_path', 'is', null)
-      .neq('file_path', '');
-
-    if (!count || count === 0) {
+  const handlePrint = async (registrationId: string) => {
+    try {
+      await generateRegistrationPrint(registrationId);
+    } catch (e) {
+      console.error('[SocialWorkerDashboard] print error:', e);
       toast({
-        title: 'Nenhum anexo encontrado',
-        description: 'O dossiê conterá apenas o formulário do cadastro.',
+        title: 'Erro ao imprimir',
+        description: 'Não foi possível gerar a página de impressão.',
+        variant: 'destructive',
       });
-    } else {
-      toast({ title: 'Gerando dossiê', description: 'O arquivo .zip será baixado em instantes.' });
     }
-
-    await downloadDossierZip(registrationId);
-  } catch (e) {
-    console.error('[SocialWorkerDashboard] dossier download error:', e);
-    toast({
-      title: 'Erro ao baixar dossiê',
-      description: 'Não foi possível gerar o ZIP com anexos.',
-      variant: 'destructive',
-    });
-  }
-};
-
-const sanitizeFileName = (name: string) => name.replace(/[^a-zA-Z0-9_\.\-]+/g, '_');
-
-const handleFilesSelected = async (
-  fileList: FileList,
-  registrationId: string,
-  citizenUserId: string
-) => {
-  const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png'];
-
-  const files = Array.from(fileList);
-  let success = 0;
-
-  await Promise.all(
-    files.map(async (file) => {
-      if (file.size > MAX_SIZE) {
-        toast({
-          title: 'Arquivo muito grande',
-          description: `${file.name} excede 10MB.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-      if (!ALLOWED.includes(file.type)) {
-        toast({
-          title: 'Tipo de arquivo não suportado',
-          description: `${file.name} deve ser PDF, JPG ou PNG.`,
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const path = `${citizenUserId}/${crypto.randomUUID()}_${sanitizeFileName(file.name)}`;
-
-      const { error: uploadErr } = await supabase.storage
-        .from('documents')
-        .upload(path, file, { upsert: true, contentType: file.type });
-
-      if (uploadErr) {
-        console.error('[upload] storage error:', uploadErr);
-        toast({ title: 'Falha no upload', description: `${file.name}`, variant: 'destructive' });
-        return;
-      }
-
-      const { error: insertErr } = await supabase.from('documents').insert({
-        user_id: citizenUserId,
-        social_registration_id: registrationId,
-        document_name: file.name,
-        document_type: docType,
-        file_path: path,
-        file_type: file.type,
-        file_size: file.size,
-        status: 'documento_enviado',
-        upload_date: new Date().toISOString(),
-      });
-
-      if (insertErr) {
-        console.error('[upload] insert error:', insertErr);
-        toast({ title: 'Erro ao salvar metadados', description: `${file.name}`, variant: 'destructive' });
-        return;
-      }
-
-      success += 1;
-    })
-  );
-
-  if (success > 0) {
-    toast({ title: 'Upload concluído', description: `${success} arquivo(s) anexado(s).` });
-    setDocsRefreshKey((k) => k + 1);
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -500,26 +351,17 @@ const handleFilesSelected = async (
                               <DialogDescription>
                                 {registration.name} — aprove, edite, consulte histórico e envie mensagens
                               </DialogDescription>
-<div className="mt-2 flex gap-2">
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handlePrint(registration.id)}
-    className="inline-flex items-center gap-2"
-  >
-    <Printer className="h-4 w-4" />
-    Imprimir cadastro
-  </Button>
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handleDownloadDossier(registration.id)}
-    className="inline-flex items-center gap-2"
-  >
-    <Download className="h-4 w-4" />
-    Baixar dossiê (.zip)
-  </Button>
-</div>
+                              <div className="mt-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePrint(registration.id)}
+                                  className="inline-flex items-center gap-2"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                  Imprimir cadastro
+                                </Button>
+                              </div>
                             </DialogHeader>
 
                               <Tabs defaultValue="atualizar" className="w-full">
@@ -572,49 +414,7 @@ const handleFilesSelected = async (
 
                                 <TabsContent value="documentos">
                                   {selectedRegistration && (
-                                    <div className="space-y-3">
-                                      <div className="flex items-center gap-2">
-                                        <Select value={docType} onValueChange={setDocType}>
-                                          <SelectTrigger className="w-56">
-                                            <SelectValue placeholder="Tipo do documento" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="RG">RG</SelectItem>
-                                            <SelectItem value="CPF">CPF</SelectItem>
-                                            <SelectItem value="Comprovante de residência">Comprovante de residência</SelectItem>
-                                            <SelectItem value="Outros">Outros</SelectItem>
-                                          </SelectContent>
-                                        </Select>
-
-                                        <input
-                                          ref={fileInputRef}
-                                          type="file"
-                                          accept=".pdf,image/*"
-                                          multiple
-                                          className="hidden"
-                                          onChange={(e) => {
-                                            if (e.target.files) {
-                                              handleFilesSelected(
-                                                e.target.files,
-                                                selectedRegistration.id,
-                                                selectedRegistration.user_id
-                                              );
-                                              e.currentTarget.value = '';
-                                            }
-                                          }}
-                                        />
-
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={() => fileInputRef.current?.click()}
-                                        >
-                                          Anexar documentos
-                                        </Button>
-                                      </div>
-
-                                      <RegistrationDocuments key={docsRefreshKey} socialRegistrationId={selectedRegistration.id} />
-                                    </div>
+                                    <RegistrationDocuments socialRegistrationId={selectedRegistration.id} />
                                   )}
                                 </TabsContent>
 
@@ -717,26 +517,17 @@ const handleFilesSelected = async (
                             <DialogDescription>
                               {registration.name} — aprove, edite, consulte histórico e envie mensagens
                             </DialogDescription>
-<div className="mt-2 flex gap-2">
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handlePrint(registration.id)}
-    className="inline-flex items-center gap-2"
-  >
-    <Printer className="h-4 w-4" />
-    Imprimir cadastro
-  </Button>
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handleDownloadDossier(registration.id)}
-    className="inline-flex items-center gap-2"
-  >
-    <Download className="h-4 w-4" />
-    Baixar dossiê (.zip)
-  </Button>
-</div>
+                            <div className="mt-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handlePrint(registration.id)}
+                                className="inline-flex items-center gap-2"
+                              >
+                                <Printer className="h-4 w-4" />
+                                Imprimir cadastro
+                              </Button>
+                            </div>
                           </DialogHeader>
 
                             <Tabs defaultValue="atualizar" className="w-full">
