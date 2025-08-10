@@ -328,7 +328,7 @@ const handleFilesSelected = async (
   citizenUserId: string
 ) => {
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png'];
+  const ALLOWED = ['application/pdf', 'image/jpeg'];
 
   const files = Array.from(fileList);
   let success = 0;
@@ -346,7 +346,7 @@ const handleFilesSelected = async (
       if (!ALLOWED.includes(file.type)) {
         toast({
           title: 'Tipo de arquivo não suportado',
-          description: `${file.name} deve ser PDF, JPG ou PNG.`,
+          description: `${file.name} deve ser PDF ou JPG.`,
           variant: 'destructive',
         });
         return;
@@ -589,7 +589,7 @@ const handleFilesSelected = async (
                                         <input
                                           ref={fileInputRef}
                                           type="file"
-                                          accept=".pdf,image/*"
+                                          accept=".pdf,image/jpeg"
                                           multiple
                                           className="hidden"
                                           onChange={(e) => {

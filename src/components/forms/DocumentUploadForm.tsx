@@ -62,11 +62,11 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
 
     for (const file of Array.from(files)) {
       // Validar tipo de arquivo
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      const allowedTypes = ['image/jpeg', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Tipo de arquivo não permitido",
-          description: "Apenas imagens (JPG, PNG) e PDFs são aceitos.",
+          description: "Apenas JPEG (JPG) e PDF são aceitos.",
           variant: "destructive",
         });
         continue;
@@ -322,7 +322,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
                 <Input
                   type="file"
                   multiple
-                  accept={category.id === 'fotos_residencia' ? 'image/*' : 'image/*,application/pdf'}
+                  accept="image/jpeg,application/pdf"
                   onChange={(e) => handleFileUpload(e.target.files, category.id)}
                   className="hidden"
                   id={`upload-${category.id}`}
@@ -336,10 +336,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
                     Clique para selecionar arquivos
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {category.id === 'fotos_residencia' 
-                      ? 'Apenas imagens (JPG, PNG)' 
-                      : 'Imagens ou PDFs (max 5MB)'
-                    }
+                    Apenas JPEG (JPG) ou PDF. Máx 5MB.
                   </span>
                 </Label>
               </div>
@@ -429,7 +426,7 @@ export const DocumentUploadForm = ({ onNext, onBack, initialFiles = [] }: Docume
             <div>
               <p className="font-medium">Tamanho dos Arquivos</p>
               <p className="text-sm text-muted-foreground">
-                Cada arquivo deve ter no máximo 5MB. Formatos aceitos: JPG, PNG, PDF.
+                Cada arquivo deve ter no máximo 5MB. Formatos aceitos: JPG e PDF.
               </p>
             </div>
           </div>

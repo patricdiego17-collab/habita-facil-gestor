@@ -215,16 +215,44 @@ const Index = () => {
         />;
       case 'terms':
         return <TermsAgreementForm 
-          onFinish={(signature) => {
+          onFinish={async (signature) => {
             setFormData(prev => ({ ...prev, signature }));
-            // Salvar cadastro completo
-            console.log('Cadastro completo:', { ...formData, signature });
-            if (formData.socialRegistration?.cpf1) {
-              alert(`Cadastro finalizado com sucesso para CPF: ${formData.socialRegistration.cpf1}`);
-            } else {
-              alert('Termo assinado com sucesso!');
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) {
+                toast.error('Erro de autenticação');
+              } else {
+                const { data: socialRegistration } = await supabase
+                  .from('social_registrations')
+                  .select('id')
+                  .eq('user_id', user.id)
+                  .order('created_at', { ascending: false })
+                  .limit(1)
+                  .single();
+                if (socialRegistration) {
+                  await supabase.from('terms_agreements').insert({
+                    user_id: user.id,
+                    social_registration_id: socialRegistration.id,
+                    terms_accepted: true,
+                    user_agent: navigator.userAgent,
+                    ip_address: null,
+                    signer_name: signature.name,
+                    signer_cpf: signature.cpf,
+                    terms_version: 'v1',
+                  } as any);
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao salvar termo aceito:', error);
+              toast.error('Não foi possível salvar o termo aceito.');
+            } finally {
+              if (formData.socialRegistration?.cpf1) {
+                alert(`Cadastro finalizado com sucesso para CPF: ${formData.socialRegistration.cpf1}`);
+              } else {
+                alert('Termo assinado com sucesso!');
+              }
+              setCurrentPage('dashboard');
             }
-            setCurrentPage('dashboard');
           }}
           onBack={() => {
             // Se veio do fluxo completo, volta para documents

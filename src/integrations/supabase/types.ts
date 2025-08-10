@@ -359,8 +359,11 @@ export type Database = {
           acceptance_date: string
           id: string
           ip_address: string | null
+          signer_cpf: string | null
+          signer_name: string | null
           social_registration_id: string | null
           terms_accepted: boolean
+          terms_version: string | null
           user_agent: string | null
           user_id: string
         }
@@ -368,8 +371,11 @@ export type Database = {
           acceptance_date?: string
           id?: string
           ip_address?: string | null
+          signer_cpf?: string | null
+          signer_name?: string | null
           social_registration_id?: string | null
           terms_accepted?: boolean
+          terms_version?: string | null
           user_agent?: string | null
           user_id: string
         }
@@ -377,8 +383,11 @@ export type Database = {
           acceptance_date?: string
           id?: string
           ip_address?: string | null
+          signer_cpf?: string | null
+          signer_name?: string | null
           social_registration_id?: string | null
           terms_accepted?: boolean
+          terms_version?: string | null
           user_agent?: string | null
           user_id?: string
         }

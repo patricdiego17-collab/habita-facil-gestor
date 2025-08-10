@@ -67,8 +67,17 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
   if (histErr) console.warn("[generateRegistrationPrint] hist error:", histErr);
   if (msgErr) console.warn("[generateRegistrationPrint] msgs error:", msgErr);
 
-  let finalFamily = (family || []) as any[];
+  const { data: termsRow, error: termsErr } = await supabase
+    .from("terms_agreements")
+    .select("*")
+    .eq("social_registration_id", socialRegistrationId)
+    .order("acceptance_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (termsErr) console.warn("[generateRegistrationPrint] terms error:", termsErr);
+  const terms: any = termsRow;
 
+  let finalFamily = (family || []) as any[];
   // Fallback: se não retornou membros por social_registration_id, tenta por user_id,
   // incluindo casos onde social_registration_id está nulo (dados antigos).
   if (!famErr && finalFamily.length === 0) {
@@ -267,6 +276,21 @@ async function buildRegistrationHtml(socialRegistrationId: string) {
         ${(!docs || docs.length === 0) ? `<tr><td colspan="5" class="muted">Nenhum documento anexado.</td></tr>` : ""}
       </tbody>
     </table>
+  </div>
+
+  <div class="section">
+    <h2>Termo de Aceite</h2>
+    ${terms ? `
+      <div class="grid">
+        <div><strong>Aceito:</strong> ${terms.terms_accepted ? 'Sim' : 'Não'}</div>
+        <div><strong>Data de Aceite:</strong> ${formatDate(terms.acceptance_date)}</div>
+        <div><strong>Assinante:</strong> ${escapeHtml(terms.signer_name || '')}</div>
+        <div><strong>CPF do Assinante:</strong> ${escapeHtml(terms.signer_cpf || '')}</div>
+        <div><strong>Versão dos Termos:</strong> ${escapeHtml(terms.terms_version || '')}</div>
+        <div><strong>User Agent:</strong> ${escapeHtml(terms.user_agent || '')}</div>
+        <div><strong>IP:</strong> ${escapeHtml(terms.ip_address || '')}</div>
+      </div>
+    ` : `<div class="muted">Sem termo associado.</div>`}
   </div>
 
   <div class="section">
