@@ -9,16 +9,6 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  cacheDir: "node_modules/.vite-clean-final",
-  optimizeDeps: {
-    include: [
-      "react",
-      "react-dom",
-      "react/jsx-runtime",
-      "react-dom/client",
-    ],
-    force: true,
-  },
   plugins: [
     react(),
     mode === 'development' &&
@@ -28,6 +18,5 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom"],
   },
 }));

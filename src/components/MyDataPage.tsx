@@ -290,7 +290,7 @@ export const MyDataPage = ({ userProfile, onBack, onNavigate }: MyDataPageProps)
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2 px-1">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Resumo</TabsTrigger>
           <TabsTrigger value="registration">Cadastro Social</TabsTrigger>
           <TabsTrigger value="family">Família</TabsTrigger>

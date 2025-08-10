@@ -3,16 +3,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LogOut, User, Menu } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import itapecericaLogo from "@/assets/itapecerica-logo.png";
-import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 
 interface HeaderProps {
   userRole?: 'admin' | 'social_worker' | 'citizen';
   userName?: string;
   onLogout?: () => void;
-  onNavigate?: (page: string) => void;
 }
 
-export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout, onNavigate }: HeaderProps) => {
+export const Header = ({ userRole = 'citizen', userName = 'Usuário', onLogout }: HeaderProps) => {
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin': return 'Administração';

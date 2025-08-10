@@ -410,7 +410,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
             Gerencie todos os cadastros sociais e acompanhe o status
           </CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
@@ -456,7 +456,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ userProfile, onNavigate
                           </DialogHeader>
 
                           <Tabs defaultValue="atualizar" className="w-full">
-                            <TabsList className="w-full overflow-x-auto whitespace-nowrap">
+                            <TabsList>
                               <TabsTrigger value="atualizar">Atualizar</TabsTrigger>
                               <TabsTrigger value="historico">Histórico</TabsTrigger>
                               <TabsTrigger value="mensagens">Mensagens</TabsTrigger>
