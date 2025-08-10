@@ -11,17 +11,10 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   return (
     <QueryClientProvider client={queryClient}>
-      {mounted && (
-        <>
-          <Toaster />
-          <Sonner />
-        </>
-      )}
+      <Toaster />
+      <Sonner />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

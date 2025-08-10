@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  cacheDir: "node_modules/.vite-lovable",
+  cacheDir: "node_modules/.vite-clean-final",
   optimizeDeps: {
     include: [
       "react",
